@@ -115,15 +115,16 @@ final class TunerViewModel: ObservableObject {
         apply(result)
     }
 
-    private func handleDetection(_ detection: PitchDetectionResult?) {
+    func handleDetection(_ detection: PitchDetectionResult?) {
         guard let detection else {
-            detectedFrequencyText = "--"
-            centsText = "--"
-            confidenceText = "0%"
-            directionText = "请更清晰地拨动所选弦"
+            guard lastDetectedFrequency != nil else {
+                directionText = "请轻拨所选弦"
+                statusColorName = "secondary"
+                return
+            }
+
+            microphoneStatusText = "等待下一次拨弦"
             statusColorName = "secondary"
-            lastDetectedFrequency = nil
-            lastConfidence = 0
             return
         }
 

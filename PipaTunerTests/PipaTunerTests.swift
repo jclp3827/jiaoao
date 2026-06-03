@@ -48,6 +48,26 @@ final class PipaTunerTests: XCTestCase {
         XCTAssertEqual(PipaString.first.targetDisplayText, "a · 440 Hz · 中音 5")
     }
 
+    @MainActor
+    func testSilentDetectionKeepsLastVisibleReadout() {
+        let viewModel = TunerViewModel()
+        viewModel.selectedString = .first
+        viewModel.handleDetection(PitchDetectionResult(frequency: 438.0, confidence: 0.92, rms: 0.2))
+
+        let detectedFrequencyText = viewModel.detectedFrequencyText
+        let centsText = viewModel.centsText
+        let confidenceText = viewModel.confidenceText
+        let directionText = viewModel.directionText
+
+        viewModel.handleDetection(nil)
+
+        XCTAssertEqual(viewModel.detectedFrequencyText, detectedFrequencyText)
+        XCTAssertEqual(viewModel.centsText, centsText)
+        XCTAssertEqual(viewModel.confidenceText, confidenceText)
+        XCTAssertEqual(viewModel.directionText, directionText)
+        XCTAssertEqual(viewModel.microphoneStatusText, "等待下一次拨弦")
+    }
+
     func testTuningGuideMarksLowPitchAsFlat() {
         let result = TuningGuide.evaluate(detectedFrequency: 210.0, targetFrequency: 220.0, confidence: 0.9)
         XCTAssertEqual(result.direction, .flat)
