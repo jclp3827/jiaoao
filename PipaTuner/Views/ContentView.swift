@@ -100,45 +100,103 @@ struct ContentView: View {
                 .font(.headline)
 
             GeometryReader { proxy in
-                let width = proxy.size.width
-                let normalized = meterPosition(from: viewModel.centsText)
+                let height = proxy.size.height
+                let centerX = proxy.size.width * 0.5
+                let normalized = meterPosition(from: viewModel.centsOffset)
                 let clamped = max(0.0, min(1.0, normalized))
-                let indicatorX = width * clamped
+                let indicatorY = height * (1.0 - clamped)
 
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(Color(uiColor: .systemGray5))
-                        .frame(height: 8)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(uiColor: .secondarySystemBackground),
+                                    Color(uiColor: .systemBackground)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
 
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(Color(uiColor: .systemGreen))
-                        .frame(width: max(8, width * 0.1), height: 8)
-                        .position(x: indicatorX, y: 4)
-                }
-                .overlay(alignment: .center) {
+                    VStack {
+                        Text("偏高")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+
+                        Spacer()
+
+                        Text("正中")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.black.opacity(0.08), in: Capsule())
+
+                        Spacer()
+
+                        Text("偏低")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .padding(.vertical, 24)
+                    .padding(.horizontal, 22)
+
+                    ForEach(0..<11, id: \.self) { index in
+                        let y = height * CGFloat(index) / 10.0
+                        Rectangle()
+                            .fill(index == 5 ? Color.primary.opacity(0.55) : Color.primary.opacity(0.22))
+                            .frame(width: index == 5 ? 54 : 28, height: index == 5 ? 2.5 : 1.5)
+                            .position(x: centerX, y: y)
+                    }
+
                     Rectangle()
-                        .fill(Color.primary.opacity(0.7))
-                        .frame(width: 2, height: 18)
-                        .position(x: width / 2, y: 4)
-                }
-                .overlay(alignment: .center) {
-                    Circle()
-                        .fill(color(from: viewModel.statusColorName))
-                        .frame(width: 14, height: 14)
-                        .position(x: indicatorX, y: 4)
-                }
-            }
-            .frame(height: 24)
+                        .fill(Color.primary.opacity(0.5))
+                        .frame(width: 2, height: max(88, height * 0.72))
+                        .position(x: centerX, y: height / 2)
 
-            HStack {
-                Text("偏低")
-                Spacer()
-                Text("正中")
-                Spacer()
-                Text("偏高")
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    color(from: viewModel.statusColorName).opacity(0.95),
+                                    color(from: viewModel.statusColorName).opacity(0.55)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 14, height: 16)
+                        .shadow(color: color(from: viewModel.statusColorName).opacity(0.5), radius: 8, x: 0, y: 0)
+                        .position(x: centerX, y: indicatorY)
+
+                    Circle()
+                        .fill(color(from: viewModel.statusColorName).opacity(0.9))
+                        .frame(width: 10, height: 10)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.7), lineWidth: 1)
+                        )
+                        .position(x: centerX, y: indicatorY)
+
+                    VStack(spacing: 6) {
+                        Text(viewModel.centsText)
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundStyle(color(from: viewModel.statusColorName))
+                        Text("偏差")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .position(x: centerX, y: 38)
+                }
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .frame(height: 250)
         }
         .padding(16)
         .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -190,17 +248,12 @@ struct ContentView: View {
         .background(Color(uiColor: .systemGray6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    private func meterPosition(from centsText: String) -> Double {
-        let cleaned = centsText
-            .replacingOccurrences(of: "cents", with: "")
-            .replacingOccurrences(of: "+", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard let cents = Double(cleaned) else {
+    private func meterPosition(from centsOffset: Double?) -> Double {
+        guard let centsOffset else {
             return 0.5
         }
 
-        let clamped = max(-50.0, min(50.0, cents))
+        let clamped = max(-50.0, min(50.0, centsOffset))
         return (clamped + 50.0) / 100.0
     }
 

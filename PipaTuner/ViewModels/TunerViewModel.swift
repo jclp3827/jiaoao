@@ -13,6 +13,7 @@ final class TunerViewModel: ObservableObject {
     @Published var statusColorName: String = "secondary"
     @Published var isListening: Bool = false
     @Published var microphoneStatusText: String = "麦克风尚未启动"
+    @Published var centsOffset: Double?
     @Published var inputActivityLevel: Double = 0
     @Published var recognitionStatusText: String = "未开始"
 
@@ -106,6 +107,7 @@ final class TunerViewModel: ObservableObject {
         guard let lastDetectedFrequency else {
             directionText = string.tuningHint
             centsText = "--"
+            centsOffset = nil
             confidenceText = "0%"
             detectedFrequencyText = "--"
             statusColorName = "secondary"
@@ -153,6 +155,7 @@ final class TunerViewModel: ObservableObject {
     private func apply(_ result: TuningResult) {
         detectedFrequencyText = result.frequencyText
         centsText = result.centsText
+        centsOffset = result.centsOffset
         confidenceText = TuningGuide.confidenceLabel(result.confidence)
         directionText = result.directionText
         statusColorName = colorName(for: result.direction)
