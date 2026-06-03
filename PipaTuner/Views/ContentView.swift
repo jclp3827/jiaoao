@@ -9,6 +9,7 @@ struct ContentView: View {
             stringPicker
             readout
             meter
+            currentState
             actionRow
             Spacer(minLength: 0)
         }
@@ -143,6 +144,22 @@ struct ContentView: View {
         .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
+    private var currentState: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("当前状态")
+                .font(.headline)
+
+            AudioActivityWaveform(level: viewModel.inputActivityLevel, tint: color(from: viewModel.statusColorName))
+                .frame(height: 44)
+
+            Text(viewModel.recognitionStatusText)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
     private var actionRow: some View {
         HStack {
             Button(action: {
@@ -205,4 +222,39 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+}
+
+private struct AudioActivityWaveform: View {
+    let level: Double
+    let tint: Color
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let phase = timeline.date.timeIntervalSinceReferenceDate * 2.6
+            let clampedLevel = max(0, min(1, level))
+
+            Canvas { context, size in
+                let baseline = size.height / 2
+                let amplitude = max(3, size.height * 0.34 * clampedLevel)
+                let mutedAmplitude = size.height * 0.04
+                let activeAmplitude = clampedLevel > 0.03 ? amplitude : mutedAmplitude
+                var path = Path()
+
+                path.move(to: CGPoint(x: 0, y: baseline))
+                for x in stride(from: 0.0, through: size.width, by: 2.0) {
+                    let progress = x / max(1, size.width)
+                    let wave = sin((progress * 3.0 * .pi * 2.0) + phase)
+                    let y = baseline + wave * activeAmplitude
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+
+                context.stroke(
+                    path,
+                    with: .color(clampedLevel > 0.03 ? tint : Color.secondary.opacity(0.35)),
+                    style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                )
+            }
+        }
+        .accessibilityLabel("音频输入状态")
+    }
 }

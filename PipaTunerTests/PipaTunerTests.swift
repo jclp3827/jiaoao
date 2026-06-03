@@ -68,6 +68,36 @@ final class PipaTunerTests: XCTestCase {
         XCTAssertEqual(viewModel.microphoneStatusText, "等待下一次拨弦")
     }
 
+    @MainActor
+    func testAudioFrameUpdatesActivityWithoutChangingTuningBasis() {
+        let viewModel = TunerViewModel()
+        viewModel.selectedString = .second
+        viewModel.handleAudioFrame(AudioAnalysisFrame(
+            detection: PitchDetectionResult(frequency: 331.0, confidence: 0.88, rms: 0.15),
+            activityLevel: 0.6
+        ))
+
+        XCTAssertEqual(viewModel.inputActivityLevel, 0.6, accuracy: 0.001)
+        XCTAssertEqual(viewModel.recognitionStatusText, "识别中...")
+        XCTAssertEqual(viewModel.targetFrequencyText, PipaString.second.targetDisplayText)
+    }
+
+    @MainActor
+    func testSilentAudioFrameKeepsLastReadoutAndDropsActivity() {
+        let viewModel = TunerViewModel()
+        viewModel.handleAudioFrame(AudioAnalysisFrame(
+            detection: PitchDetectionResult(frequency: 438.0, confidence: 0.92, rms: 0.2),
+            activityLevel: 0.7
+        ))
+
+        let detectedFrequencyText = viewModel.detectedFrequencyText
+        viewModel.handleAudioFrame(AudioAnalysisFrame(detection: nil, activityLevel: 0))
+
+        XCTAssertEqual(viewModel.inputActivityLevel, 0, accuracy: 0.001)
+        XCTAssertEqual(viewModel.recognitionStatusText, "等待下一次拨弦")
+        XCTAssertEqual(viewModel.detectedFrequencyText, detectedFrequencyText)
+    }
+
     func testTuningGuideMarksLowPitchAsFlat() {
         let result = TuningGuide.evaluate(detectedFrequency: 210.0, targetFrequency: 220.0, confidence: 0.9)
         XCTAssertEqual(result.direction, .flat)

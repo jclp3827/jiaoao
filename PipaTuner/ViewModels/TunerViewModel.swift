@@ -13,6 +13,8 @@ final class TunerViewModel: ObservableObject {
     @Published var statusColorName: String = "secondary"
     @Published var isListening: Bool = false
     @Published var microphoneStatusText: String = "麦克风尚未启动"
+    @Published var inputActivityLevel: Double = 0
+    @Published var recognitionStatusText: String = "未开始"
 
     private let recorder = AudioRecorder()
     private var cancellables: Set<AnyCancellable> = []
@@ -20,9 +22,9 @@ final class TunerViewModel: ObservableObject {
     private var lastConfidence: Double = 0
 
     init() {
-        recorder.onPitchDetected = { [weak self] detection in
+        recorder.onAudioFrame = { [weak self] frame in
             DispatchQueue.main.async {
-                self?.handleDetection(detection)
+                self?.handleAudioFrame(frame)
             }
         }
 
@@ -59,6 +61,7 @@ final class TunerViewModel: ObservableObject {
                     try self.recorder.start()
                     self.isListening = true
                     self.microphoneStatusText = "正在监听所选弦"
+                    self.recognitionStatusText = "等待拨弦"
                     self.directionText = self.selectedString.tuningHint
                     self.statusColorName = "secondary"
                 } catch {
@@ -79,6 +82,8 @@ final class TunerViewModel: ObservableObject {
         recorder.stop()
         isListening = false
         microphoneStatusText = "麦克风已停止"
+        recognitionStatusText = "已停止"
+        inputActivityLevel = 0
         directionText = selectedString.tuningHint
         statusColorName = "secondary"
     }
@@ -113,6 +118,12 @@ final class TunerViewModel: ObservableObject {
             confidence: lastConfidence
         )
         apply(result)
+    }
+
+    func handleAudioFrame(_ frame: AudioAnalysisFrame) {
+        inputActivityLevel = frame.activityLevel
+        recognitionStatusText = frame.activityLevel > 0.08 ? "识别中..." : "等待下一次拨弦"
+        handleDetection(frame.detection)
     }
 
     func handleDetection(_ detection: PitchDetectionResult?) {
@@ -169,8 +180,13 @@ final class TunerViewModel: ObservableObject {
     }
 }
 
+struct AudioAnalysisFrame {
+    let detection: PitchDetectionResult?
+    let activityLevel: Double
+}
+
 private final class AudioRecorder {
-    var onPitchDetected: ((PitchDetectionResult?) -> Void)?
+    var onAudioFrame: ((AudioAnalysisFrame) -> Void)?
 
     private let engine = AVAudioEngine()
     private let detector = PitchDetectionEngine()
@@ -196,8 +212,9 @@ private final class AudioRecorder {
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
             guard let self else { return }
+            let activityLevel = self.activityLevel(from: buffer)
             let detection = self.detector.detectPitch(from: buffer)
-            self.onPitchDetected?(detection)
+            self.onAudioFrame?(AudioAnalysisFrame(detection: detection, activityLevel: activityLevel))
         }
 
         engine.prepare()
@@ -214,5 +231,28 @@ private final class AudioRecorder {
         engine.stop()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isRunning = false
+    }
+
+    private func activityLevel(from buffer: AVAudioPCMBuffer) -> Double {
+        guard let channelData = buffer.floatChannelData else {
+            return 0
+        }
+
+        let frameLength = Int(buffer.frameLength)
+        let channelCount = Int(buffer.format.channelCount)
+        guard frameLength > 0, channelCount > 0 else {
+            return 0
+        }
+
+        var sumSquares = 0.0
+        for channel in 0..<channelCount {
+            for frame in 0..<frameLength {
+                let sample = Double(channelData[channel][frame])
+                sumSquares += sample * sample
+            }
+        }
+
+        let rms = sqrt(sumSquares / Double(frameLength * channelCount))
+        return min(1.0, rms / 0.08)
     }
 }
