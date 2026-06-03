@@ -28,8 +28,8 @@ final class TunerViewModel: ObservableObject {
 
         $selectedString
             .dropFirst()
-            .sink { [weak self] _ in
-                self?.recalculateLastResult()
+            .sink { [weak self] string in
+                self?.recalculateLastResult(for: string)
             }
             .store(in: &cancellables)
 
@@ -92,10 +92,14 @@ final class TunerViewModel: ObservableObject {
     }
 
     func recalculateLastResult() {
-        updateTargetLabels()
+        recalculateLastResult(for: selectedString)
+    }
+
+    private func recalculateLastResult(for string: PipaString) {
+        updateTargetLabels(for: string)
 
         guard let lastDetectedFrequency else {
-            directionText = selectedString.tuningHint
+            directionText = string.tuningHint
             centsText = "--"
             confidenceText = "0%"
             detectedFrequencyText = "--"
@@ -105,7 +109,7 @@ final class TunerViewModel: ObservableObject {
 
         let result = TuningGuide.evaluate(
             detectedFrequency: lastDetectedFrequency,
-            targetFrequency: selectedString.targetFrequency,
+            targetFrequency: string.targetFrequency,
             confidence: lastConfidence
         )
         apply(result)
@@ -143,7 +147,11 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func updateTargetLabels() {
-        targetFrequencyText = selectedString.targetDisplayText
+        updateTargetLabels(for: selectedString)
+    }
+
+    private func updateTargetLabels(for string: PipaString) {
+        targetFrequencyText = string.targetDisplayText
     }
 
     private func colorName(for direction: TuningDirection) -> String {

@@ -24,6 +24,23 @@ final class PipaTunerTests: XCTestCase {
         XCTAssertEqual(PipaString.tuningOrder, [.first, .second, .third, .fourth])
     }
 
+    @MainActor
+    func testSelectedStringUpdatesReadoutTargetImmediately() {
+        let viewModel = TunerViewModel()
+
+        viewModel.selectedString = .first
+        XCTAssertEqual(viewModel.targetFrequencyText, PipaString.first.targetDisplayText)
+
+        viewModel.selectedString = .second
+        XCTAssertEqual(viewModel.targetFrequencyText, PipaString.second.targetDisplayText)
+
+        viewModel.selectedString = .third
+        XCTAssertEqual(viewModel.targetFrequencyText, PipaString.third.targetDisplayText)
+
+        viewModel.selectedString = .fourth
+        XCTAssertEqual(viewModel.targetFrequencyText, PipaString.fourth.targetDisplayText)
+    }
+
     func testTargetDisplayTextMatchesTable() {
         XCTAssertEqual(PipaString.fourth.targetDisplayText, "大 A · 220 Hz · 低音 5")
         XCTAssertEqual(PipaString.third.targetDisplayText, "d · 293.6 Hz · 中音 1")
