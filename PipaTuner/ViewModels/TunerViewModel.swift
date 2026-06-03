@@ -4,9 +4,9 @@ import Foundation
 
 @MainActor
 final class TunerViewModel: ObservableObject {
-    @Published var selectedString: PipaString = .fourth
+    @Published var selectedString: PipaString = .first
     @Published var detectedFrequencyText: String = "--"
-    @Published var targetFrequencyText: String = "220 Hz"
+    @Published var targetFrequencyText: String = "440 Hz"
     @Published var centsText: String = "--"
     @Published var directionText: String = "点击开始，准备拾音"
     @Published var confidenceText: String = "0%"

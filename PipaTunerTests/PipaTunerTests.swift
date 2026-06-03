@@ -20,6 +20,10 @@ final class PipaTunerTests: XCTestCase {
         XCTAssertEqual(PipaString.first.scientificNoteName, "A4")
     }
 
+    func testTuningOrderMatchesNaturalStringOrder() {
+        XCTAssertEqual(PipaString.tuningOrder, [.first, .second, .third, .fourth])
+    }
+
     func testTargetDisplayTextMatchesTable() {
         XCTAssertEqual(PipaString.fourth.targetDisplayText, "大 A · 220 Hz · 低音 5")
         XCTAssertEqual(PipaString.third.targetDisplayText, "d · 293.6 Hz · 中音 1")

@@ -35,7 +35,7 @@ struct ContentView: View {
                 .font(.headline)
 
             Picker("选择琴弦", selection: $viewModel.selectedString) {
-                ForEach(PipaString.allCases) { string in
+                ForEach(PipaString.tuningOrder) { string in
                     Text(string.shortName).tag(string)
                 }
             }

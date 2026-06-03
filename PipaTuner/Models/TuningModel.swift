@@ -8,6 +8,8 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
 
     var id: String { rawValue }
 
+    static let tuningOrder: [PipaString] = [.first, .second, .third, .fourth]
+
     var shortName: String {
         switch self {
         case .fourth: return "四弦"
