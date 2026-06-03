@@ -17,9 +17,9 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var noteName: String {
+    var scientificNoteName: String {
         switch self {
-        case .fourth: return "A2"
+        case .fourth: return "A3"
         case .third: return "D4"
         case .second: return "E4"
         case .first: return "A4"
@@ -35,13 +35,26 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var approximateFrequencyLabel: String {
+    var displayPitchName: String {
+        switch self {
+        case .fourth: return "大 A"
+        case .third: return "d"
+        case .second: return "e"
+        case .first: return "a"
+        }
+    }
+
+    var frequencyLabel: String {
         switch self {
         case .fourth: return "220 Hz"
-        case .third: return "294 Hz"
-        case .second: return "330 Hz"
+        case .third: return "293.6 Hz"
+        case .second: return "329.6 Hz"
         case .first: return "440 Hz"
         }
+    }
+
+    var targetDisplayText: String {
+        "\(displayPitchName) · \(frequencyLabel) · \(jianpuLabel)"
     }
 
     var jianpuLabel: String {
@@ -55,10 +68,10 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
 
     var tuningHint: String {
         switch self {
-        case .fourth: return "把缠弦调到大 A，220 Hz 附近。"
-        case .third: return "把老弦调到 d，约 294 Hz。"
-        case .second: return "把中弦调到 e，约 330 Hz。"
-        case .first: return "把子弦调到 a，440 Hz 附近。"
+        case .fourth: return "把缠弦调到大 A，220 Hz。"
+        case .third: return "把老弦调到 d，293.6 Hz。"
+        case .second: return "把中弦调到 e，329.6 Hz。"
+        case .first: return "把子弦调到 a，440 Hz。"
         }
     }
 }
@@ -133,4 +146,3 @@ enum TuningGuide {
         return "\(percentage)%"
     }
 }
-

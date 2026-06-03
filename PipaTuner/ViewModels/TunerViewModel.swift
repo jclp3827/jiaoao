@@ -143,7 +143,7 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func updateTargetLabels() {
-        targetFrequencyText = "\(selectedString.approximateFrequencyLabel)  ·  \(selectedString.noteName)"
+        targetFrequencyText = "\(selectedString.targetDisplayText)  ·  \(selectedString.scientificNoteName)"
     }
 
     private func colorName(for direction: TuningDirection) -> String {
@@ -177,7 +177,7 @@ private final class AudioRecorder {
         }
 
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .mixWithOthers, .allowBluetooth])
+        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .mixWithOthers, .allowBluetoothHFP])
         try session.setPreferredSampleRate(44_100)
         try session.setActive(true, options: .notifyOthersOnDeactivation)
 
@@ -207,4 +207,3 @@ private final class AudioRecorder {
         isRunning = false
     }
 }
-

@@ -44,6 +44,9 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(viewModel.selectedString.rawValue)
                     .font(.subheadline.weight(.semibold))
+                Text(viewModel.selectedString.targetDisplayText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                 Text(viewModel.selectedString.tuningHint)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -203,4 +206,3 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
-
