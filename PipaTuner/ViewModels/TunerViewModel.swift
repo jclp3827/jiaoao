@@ -143,7 +143,7 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func updateTargetLabels() {
-        targetFrequencyText = "\(selectedString.targetDisplayText)  ·  \(selectedString.scientificNoteName)"
+        targetFrequencyText = selectedString.targetDisplayText
     }
 
     private func colorName(for direction: TuningDirection) -> String {
