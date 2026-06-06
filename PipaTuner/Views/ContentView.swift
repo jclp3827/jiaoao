@@ -9,15 +9,14 @@ struct ContentView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 20) {
                     TunerHeader()
+                    TunerDashboard(
+                        viewModel: viewModel,
+                        selectedString: $viewModel.selectedString,
+                        statusColor: statusColor
+                    )
                     CurrentSelectionPill(string: viewModel.selectedString)
-                    PipaHeroCard(string: viewModel.selectedString, statusColor: statusColor)
-                    StringPickerCard(selectedString: $viewModel.selectedString)
-                    ReadoutCard(viewModel: viewModel)
-                    DeviationMeterCard(centsOffset: viewModel.centsOffset, centsText: viewModel.centsText, statusColor: statusColor)
-                    AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
-                    TuningModeCard()
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 22)
@@ -40,6 +39,56 @@ struct ContentView: View {
 
     private var statusColor: Color {
         TunerTheme.color(from: viewModel.statusColorName)
+    }
+}
+
+private struct TunerDashboard: View {
+    @ObservedObject var viewModel: TunerViewModel
+    @Binding var selectedString: PipaString
+    let statusColor: Color
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            wideLayout
+            compactLayout
+        }
+    }
+
+    private var wideLayout: some View {
+        HStack(alignment: .center, spacing: 18) {
+            VStack(spacing: 18) {
+                StringPickerCard(selectedString: $selectedString)
+                DeviationMeterCard(centsOffset: viewModel.centsOffset, centsText: viewModel.centsText, statusColor: statusColor)
+            }
+            .frame(width: 250)
+
+            PipaHeroStage(string: selectedString, statusColor: statusColor)
+                .frame(maxWidth: .infinity, minHeight: 650)
+
+            VStack(spacing: 18) {
+                ReadoutCard(viewModel: viewModel)
+                TargetPitchCard(string: selectedString)
+                ConfidenceCard(confidenceText: viewModel.confidenceText)
+                AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
+                TuningModeCard()
+            }
+            .frame(width: 270)
+        }
+    }
+
+    private var compactLayout: some View {
+        VStack(spacing: 18) {
+            PipaHeroStage(string: selectedString, statusColor: statusColor)
+                .frame(height: 520)
+
+            StringPickerCard(selectedString: $selectedString)
+            ReadoutCard(viewModel: viewModel)
+            TargetPitchCard(string: selectedString)
+            DeviationMeterCard(centsOffset: viewModel.centsOffset, centsText: viewModel.centsText, statusColor: statusColor)
+            ConfidenceCard(confidenceText: viewModel.confidenceText)
+            AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
+            TuningModeCard()
+        }
     }
 }
 
@@ -211,7 +260,7 @@ private struct StringPickerCard: View {
             VStack(alignment: .leading, spacing: 14) {
                 SectionTitle(title: "选择弦", subtitle: "手动选择当前拨动的琴弦")
 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                VStack(spacing: 10) {
                     ForEach(PipaString.tuningOrder) { string in
                         StringOptionButton(
                             string: string,
@@ -226,54 +275,61 @@ private struct StringPickerCard: View {
     }
 }
 
-private struct PipaHeroCard: View {
+private struct PipaHeroStage: View {
     let string: PipaString
     let statusColor: Color
 
     var body: some View {
-        TunerCard {
+        ZStack(alignment: .bottom) {
+            RadialGradient(
+                colors: [
+                    TunerTheme.gold.opacity(0.18),
+                    TunerTheme.copper.opacity(0.12),
+                    .clear
+                ],
+                center: .center,
+                startRadius: 20,
+                endRadius: 360
+            )
+
+            Image("pipaHero")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 360, maxHeight: 620)
+                .shadow(color: .black.opacity(0.52), radius: 28, x: 0, y: 22)
+                .shadow(color: statusColor.opacity(0.16), radius: 18, x: 0, y: 0)
+                .accessibilityLabel("琵琶")
+
+            LinearGradient(
+                colors: [
+                    .clear,
+                    Color.black.opacity(0.22)
+                ],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+
             VStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    TunerTheme.copper.opacity(0.26),
-                                    Color.black.opacity(0.05)
-                                ],
-                                center: .center,
-                                startRadius: 10,
-                                endRadius: 220
-                            )
-                        )
-                        .frame(height: 250)
-
-                    PipaSilhouette(highlightedString: string, statusColor: statusColor)
-                        .frame(width: 190, height: 235)
-                        .accessibilityHidden(true)
+                Spacer()
+                HStack(spacing: 6) {
+                    Text("当前选择：")
+                        .foregroundStyle(TunerTheme.muted)
+                    Text("\(string.shortName)（\(string.rawValue.replacingOccurrences(of: string.shortName, with: "").replacingOccurrences(of: "（", with: "").replacingOccurrences(of: "）", with: ""))）")
+                        .fontWeight(.bold)
+                        .foregroundStyle(TunerTheme.gold)
                 }
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("当前弦位")
-                            .font(.caption)
-                            .foregroundStyle(TunerTheme.muted)
-                        Text("\(string.shortName) · \(string.jianpuLabel)")
-                            .font(.headline)
-                            .foregroundStyle(TunerTheme.gold)
-                    }
-
-                    Spacer(minLength: 12)
-
-                    Text(string.frequencyLabel)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(TunerTheme.text)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.2), in: Capsule())
-                }
+                .font(.callout)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(Color.black.opacity(0.36), in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(TunerTheme.border, lineWidth: 1)
+                )
             }
+            .padding(.bottom, 10)
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -462,34 +518,77 @@ private struct ReadoutCard: View {
 
     var body: some View {
         TunerCard {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .center, spacing: 14) {
                 SectionTitle(title: "实时结果", subtitle: viewModel.directionText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(alignment: .center, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(viewModel.detectedFrequencyText)
-                            .font(.system(size: 38, weight: .black, design: .rounded))
-                            .foregroundStyle(TunerTheme.text)
-                        Text("当前频率")
-                            .font(.caption)
-                            .foregroundStyle(TunerTheme.muted)
-                    }
-
-                    Spacer(minLength: 0)
+                ZStack {
+                    Circle()
+                        .stroke(TunerTheme.copper.opacity(0.14), lineWidth: 1)
+                        .frame(width: 130, height: 130)
+                    Circle()
+                        .stroke(TunerTheme.copper.opacity(0.10), lineWidth: 1)
+                        .frame(width: 96, height: 96)
 
                     VStack(spacing: 4) {
                         Text(viewModel.selectedString.displayPitchName)
-                            .font(.system(size: 48, weight: .black, design: .serif))
+                            .font(.system(size: 58, weight: .black, design: .serif))
                             .foregroundStyle(TunerTheme.gold)
-                        Text(viewModel.targetFrequencyText)
+                        Text(viewModel.detectedFrequencyText)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(TunerTheme.text)
+                        Text(viewModel.selectedString.jianpuLabel)
                             .font(.footnote)
                             .foregroundStyle(TunerTheme.muted)
                     }
                 }
+            }
+        }
+    }
+}
 
-                HStack(spacing: 12) {
-                    MetricTile(title: viewModel.centsText, subtitle: "偏差", tint: TunerTheme.color(from: viewModel.statusColorName))
-                    MetricTile(title: viewModel.confidenceText, subtitle: "置信度", tint: Color(red: 0.35, green: 0.88, blue: 0.47))
+private struct TargetPitchCard: View {
+    let string: PipaString
+
+    var body: some View {
+        TunerCard {
+            VStack(alignment: .center, spacing: 8) {
+                SectionTitle(title: "目标音高", subtitle: "当前所选弦的标准音")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(string.displayPitchName)
+                    .font(.system(size: 42, weight: .black, design: .serif))
+                    .foregroundStyle(TunerTheme.gold)
+                Text(string.frequencyLabel)
+                    .font(.system(size: 23, weight: .bold, design: .rounded))
+                    .foregroundStyle(TunerTheme.text)
+                Text(string.jianpuLabel)
+                    .font(.callout)
+                    .foregroundStyle(TunerTheme.muted)
+            }
+        }
+    }
+}
+
+private struct ConfidenceCard: View {
+    let confidenceText: String
+
+    var body: some View {
+        TunerCard {
+            VStack(alignment: .center, spacing: 12) {
+                SectionTitle(title: "偏差", subtitle: "本次识别置信度")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(confidenceText)
+                    .font(.system(size: 38, weight: .black, design: .rounded))
+                    .foregroundStyle(Color(red: 0.35, green: 0.88, blue: 0.47))
+
+                HStack(spacing: 6) {
+                    ForEach(0..<6, id: \.self) { _ in
+                        Capsule()
+                            .fill(Color(red: 0.35, green: 0.88, blue: 0.47))
+                            .frame(height: 7)
+                    }
                 }
             }
         }

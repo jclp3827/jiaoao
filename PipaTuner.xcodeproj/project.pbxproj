@@ -12,6 +12,7 @@
 		000000000000000000000013 /* TuningModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000C /* TuningModel.swift */; };
 		000000000000000000000014 /* PitchDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000D /* PitchDetectionEngine.swift */; };
 		000000000000000000000020 /* PipaTunerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000021 /* PipaTunerTests.swift */; };
+		A10000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		00000000000000000000000D /* PitchDetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchDetectionEngine.swift; sourceTree = "<group>"; };
 		000000000000000000000021 /* PipaTunerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipaTunerTests.swift; sourceTree = "<group>"; };
 		000000000000000000000022 /* PipaTunerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = PipaTunerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -44,6 +46,7 @@
 				000000000000000000000017 /* Models */,
 				000000000000000000000018 /* Services */,
 				000000000000000000000019 /* Views */,
+				A10000000000000000000002 /* Assets.xcassets */,
 				00000000000000000000000E /* Info.plist */,
 			);
 			path = PipaTuner;
@@ -181,6 +184,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000001 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
