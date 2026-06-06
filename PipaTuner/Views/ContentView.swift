@@ -76,24 +76,423 @@ private struct TunerDashboard: View {
     }
 
     private var compactLayout: some View {
-        VStack(spacing: 14) {
-            CompactHeroStage(
-                viewModel: viewModel,
-                string: selectedString,
-                statusColor: statusColor
-            )
-            .frame(height: 500)
-
-            StringPickerCard(selectedString: $selectedString)
-            DeviationMeterCard(centsOffset: viewModel.centsOffset, centsText: viewModel.centsText, statusColor: statusColor)
-            AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
-            TuningModeCard()
-        }
+        HTMLStyleCompactDashboard(
+            viewModel: viewModel,
+            selectedString: $selectedString,
+            statusColor: statusColor
+        )
     }
 }
 
 #Preview {
     ContentView()
+}
+
+private struct HTMLStyleCompactDashboard: View {
+    @ObservedObject var viewModel: TunerViewModel
+    @Binding var selectedString: PipaString
+    let statusColor: Color
+
+    var body: some View {
+        VStack(spacing: 12) {
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                let height = proxy.size.height
+                let leftWidth = min(112, width * 0.30)
+                let rightWidth = min(122, width * 0.32)
+
+                ZStack {
+                    Image("pipaHero")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: min(width * 0.94, 370), height: height * 1.08)
+                        .shadow(color: .black.opacity(0.62), radius: 24, x: 0, y: 18)
+                        .shadow(color: TunerTheme.copper.opacity(0.20), radius: 22, x: 0, y: 0)
+                        .position(x: width / 2, y: height * 0.54)
+                        .accessibilityLabel("琵琶")
+
+                    RadialGradient(
+                        colors: [TunerTheme.gold.opacity(0.16), .clear],
+                        center: .center,
+                        startRadius: 12,
+                        endRadius: 210
+                    )
+                    .frame(width: width * 0.78, height: height * 0.72)
+                    .position(x: width / 2, y: height * 0.48)
+                    .allowsHitTesting(false)
+
+                    HStack(alignment: .top, spacing: 0) {
+                        VStack(spacing: 12) {
+                            HTMLStringPickerPanel(selectedString: $selectedString)
+                                .frame(height: 214)
+                            HTMLDeviationPanel(centsOffset: viewModel.centsOffset, statusColor: statusColor)
+                                .frame(maxHeight: .infinity)
+                        }
+                        .frame(width: leftWidth)
+
+                        Spacer(minLength: 0)
+
+                        VStack(spacing: 12) {
+                            HTMLReadoutPanel(viewModel: viewModel)
+                            HTMLTargetPanel(string: selectedString)
+                            HTMLConfidencePanel(confidenceText: viewModel.confidenceText)
+                            HTMLAudioPanel(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
+                            HTMLModePanel()
+                        }
+                        .frame(width: rightWidth)
+                    }
+                }
+            }
+            .frame(height: 556)
+
+            CurrentSelectionPill(string: selectedString)
+                .frame(maxWidth: 320)
+        }
+    }
+}
+
+private struct HTMLGlassPanel<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(10)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(TunerTheme.panel.opacity(0.76))
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(TunerTheme.gold.opacity(0.18), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.38), radius: 16, x: 0, y: 10)
+    }
+}
+
+private struct HTMLStringPickerPanel: View {
+    @Binding var selectedString: PipaString
+
+    var body: some View {
+        HTMLGlassPanel {
+            VStack(alignment: .leading, spacing: 8) {
+                HTMLPanelTitle("选择弦")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(spacing: 6) {
+                    ForEach(PipaString.tuningOrder) { string in
+                        HTMLStringOption(string: string, isSelected: selectedString == string) {
+                            selectedString = string
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct HTMLStringOption: View {
+    let string: PipaString
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(string.shortName)
+                        .font(.system(size: 15, weight: .bold, design: .serif))
+                        .foregroundStyle(isSelected ? TunerTheme.text : TunerTheme.muted.opacity(0.70))
+                    if isSelected {
+                        Text(string.jianpuLabel)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(TunerTheme.gold.opacity(0.92))
+                    }
+                }
+
+                Spacer(minLength: 0)
+
+                Circle()
+                    .stroke(isSelected ? TunerTheme.gold : TunerTheme.muted.opacity(0.36), lineWidth: isSelected ? 2 : 1)
+                    .frame(width: 18, height: 18)
+                    .overlay {
+                        if isSelected {
+                            Circle()
+                                .fill(TunerTheme.gold)
+                                .frame(width: 7, height: 7)
+                        }
+                    }
+                    .shadow(color: isSelected ? TunerTheme.gold.opacity(0.5) : .clear, radius: 6, x: 0, y: 0)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, isSelected ? 9 : 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(selectedFill)
+                    .opacity(isSelected ? 1 : 0)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(isSelected ? TunerTheme.gold.opacity(0.58) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var selectedFill: LinearGradient {
+        LinearGradient(
+            colors: [TunerTheme.copper.opacity(0.48), TunerTheme.gold.opacity(0.20)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+}
+
+private struct HTMLDeviationPanel: View {
+    let centsOffset: Double?
+    let statusColor: Color
+
+    var body: some View {
+        HTMLGlassPanel {
+            VStack(spacing: 8) {
+                HTMLPanelTitle("偏差刻度")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                GeometryReader { proxy in
+                    let height = proxy.size.height
+                    let centerX = proxy.size.width * 0.38
+                    let normalized = meterPosition(from: centsOffset)
+                    let indicatorY = height * (1.0 - normalized)
+
+                    ZStack {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        TunerTheme.gold.opacity(0.38),
+                                        TunerTheme.gold.opacity(0.72),
+                                        TunerTheme.gold.opacity(0.38)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(width: 4, height: height * 0.88)
+                            .position(x: centerX, y: height / 2)
+
+                        ForEach(0..<11, id: \.self) { index in
+                            let y = height * CGFloat(index) / 10.0
+                            Rectangle()
+                                .fill(index == 5 ? TunerTheme.gold : TunerTheme.muted.opacity(0.42))
+                                .frame(width: index == 5 ? 34 : 18, height: 1)
+                                .position(x: centerX - 12, y: y)
+                        }
+
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 13, height: 13)
+                            .shadow(color: statusColor.opacity(0.8), radius: 8, x: 0, y: 0)
+                            .position(x: centerX, y: indicatorY)
+                            .animation(.easeOut(duration: 0.45), value: centsOffset ?? 0)
+
+                        VStack {
+                            Text("0")
+                            Spacer()
+                            Text("正中")
+                            Spacer()
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(TunerTheme.gold)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+
+                        VStack {
+                            Text("偏高")
+                            Spacer()
+                            Text("偏低")
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(TunerTheme.muted)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.top, 28)
+                        .padding(.bottom, 8)
+                    }
+                }
+            }
+        }
+    }
+
+    private func meterPosition(from centsOffset: Double?) -> Double {
+        guard let centsOffset else {
+            return 0.5
+        }
+
+        let clamped = max(-50.0, min(50.0, centsOffset))
+        return (clamped + 50.0) / 100.0
+    }
+}
+
+private struct HTMLReadoutPanel: View {
+    @ObservedObject var viewModel: TunerViewModel
+
+    var body: some View {
+        HTMLGlassPanel {
+            VStack(spacing: 6) {
+                HTMLPanelTitle("实时结果")
+                ZStack {
+                    Circle()
+                        .stroke(TunerTheme.gold.opacity(0.16), lineWidth: 1)
+                        .frame(width: 58, height: 58)
+                    Text(viewModel.selectedString.displayPitchName)
+                        .font(.system(size: 34, weight: .black, design: .serif))
+                        .foregroundStyle(TunerTheme.text)
+                }
+                Text(viewModel.detectedFrequencyText)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(TunerTheme.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(viewModel.selectedString.jianpuLabel)
+                    .font(.caption2)
+                    .foregroundStyle(TunerTheme.muted)
+            }
+        }
+    }
+}
+
+private struct HTMLTargetPanel: View {
+    let string: PipaString
+
+    var body: some View {
+        HTMLGlassPanel {
+            VStack(spacing: 5) {
+                HTMLPanelTitle("目标音高")
+                Text(string.displayPitchName)
+                    .font(.system(size: 31, weight: .black, design: .serif))
+                    .foregroundStyle(TunerTheme.text)
+                Text(string.frequencyLabel)
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(TunerTheme.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(string.jianpuLabel)
+                    .font(.caption2)
+                    .foregroundStyle(TunerTheme.muted)
+            }
+        }
+    }
+}
+
+private struct HTMLConfidencePanel: View {
+    let confidenceText: String
+
+    var body: some View {
+        HTMLGlassPanel {
+            VStack(spacing: 6) {
+                HTMLPanelTitle("偏差")
+                Text(confidenceText)
+                    .font(.system(size: 25, weight: .black, design: .rounded))
+                    .foregroundStyle(Color(red: 0.35, green: 0.88, blue: 0.47))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text("置信度")
+                    .font(.caption2)
+                    .foregroundStyle(TunerTheme.muted)
+
+                HStack(spacing: 3) {
+                    ForEach(0..<5, id: \.self) { index in
+                        Capsule()
+                            .fill(index < activeSegments ? Color(red: 0.35, green: 0.88, blue: 0.47) : TunerTheme.muted.opacity(0.22))
+                            .frame(height: 5)
+                    }
+                }
+            }
+        }
+    }
+
+    private var activeSegments: Int {
+        let digits = confidenceText.filter(\.isNumber)
+        let value = Int(digits) ?? 0
+        return max(0, min(5, Int((Double(value) / 100.0 * 5.0).rounded(.up))))
+    }
+}
+
+private struct HTMLAudioPanel: View {
+    let level: Double
+    let statusText: String
+    let tint: Color
+
+    var body: some View {
+        HTMLGlassPanel {
+            VStack(spacing: 7) {
+                HTMLPanelTitle("当前状态")
+                AudioActivityWaveform(level: level, tint: tint)
+                    .frame(height: 28)
+                Text(statusText)
+                    .font(.caption2)
+                    .foregroundStyle(TunerTheme.muted)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+            }
+        }
+    }
+}
+
+private struct HTMLModePanel: View {
+    var body: some View {
+        HTMLGlassPanel {
+            VStack(spacing: 8) {
+                HTMLPanelTitle("调音模式")
+                HStack(spacing: 4) {
+                    Text("自动")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(TunerTheme.text)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .fill(TunerTheme.copper.opacity(0.46))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .stroke(TunerTheme.gold.opacity(0.6), lineWidth: 1)
+                        )
+
+                    Text("手动")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(TunerTheme.muted)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                }
+                Text("自动识别音高")
+                    .font(.caption2)
+                    .foregroundStyle(TunerTheme.muted)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+        }
+    }
+}
+
+private struct HTMLPanelTitle: View {
+    let title: String
+
+    init(_ title: String) {
+        self.title = title
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 15, weight: .bold, design: .serif))
+            .foregroundStyle(TunerTheme.text)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+    }
 }
 
 private enum TunerTheme {
@@ -117,6 +516,15 @@ private enum TunerTheme {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+
+            Image("pipaHero")
+                .resizable()
+                .scaledToFit()
+                .opacity(0.16)
+                .blur(radius: 8)
+                .scaleEffect(1.18)
+
+            Color.black.opacity(0.54)
 
             RadialGradient(
                 colors: [
