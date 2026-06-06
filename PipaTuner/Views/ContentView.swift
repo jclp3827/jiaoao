@@ -9,7 +9,7 @@ struct ContentView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 12) {
                     TunerHeader()
                     TunerDashboard(
                         viewModel: viewModel,
@@ -18,8 +18,8 @@ struct ContentView: View {
                     )
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 18)
-                .padding(.bottom, 150)
+                .padding(.top, 12)
+                .padding(.bottom, 122)
             }
             .scrollIndicators(.hidden)
         }
@@ -94,7 +94,7 @@ private struct HTMLStyleCompactDashboard: View {
     let statusColor: Color
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             GeometryReader { proxy in
                 let width = proxy.size.width
                 let height = proxy.size.height
@@ -124,9 +124,9 @@ private struct HTMLStyleCompactDashboard: View {
                     HStack(alignment: .top, spacing: 0) {
                         VStack(spacing: 12) {
                             HTMLStringPickerPanel(selectedString: $selectedString)
-                                .frame(height: 214)
+                                .frame(height: 188)
                             HTMLDeviationPanel(centsOffset: viewModel.centsOffset, statusColor: statusColor)
-                                .frame(maxHeight: .infinity)
+                                .frame(height: 292)
                         }
                         .frame(width: leftWidth)
 
@@ -137,15 +137,14 @@ private struct HTMLStyleCompactDashboard: View {
                             HTMLTargetPanel(string: selectedString)
                             HTMLConfidencePanel(confidenceText: viewModel.confidenceText)
                             HTMLAudioPanel(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
-                            HTMLModePanel()
                         }
                         .frame(width: rightWidth)
                     }
                 }
             }
-            .frame(height: 556)
+            .frame(height: 506)
 
-            CurrentSelectionPill(string: selectedString)
+            CurrentSelectionPill(string: selectedString, showsLabel: false)
                 .frame(maxWidth: 320)
         }
     }
@@ -216,40 +215,19 @@ private struct HTMLStringOption: View {
                 }
 
                 Spacer(minLength: 0)
-
-                Circle()
-                    .stroke(isSelected ? TunerTheme.gold : TunerTheme.muted.opacity(0.36), lineWidth: isSelected ? 2 : 1)
-                    .frame(width: 18, height: 18)
-                    .overlay {
-                        if isSelected {
-                            Circle()
-                                .fill(TunerTheme.gold)
-                                .frame(width: 7, height: 7)
-                        }
-                    }
-                    .shadow(color: isSelected ? TunerTheme.gold.opacity(0.5) : .clear, radius: 6, x: 0, y: 0)
             }
             .padding(.horizontal, 9)
-            .padding(.vertical, isSelected ? 9 : 8)
+            .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(selectedFill)
-                    .opacity(isSelected ? 1 : 0)
+                    .fill(Color.black.opacity(0.001))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(isSelected ? TunerTheme.gold.opacity(0.58) : Color.clear, lineWidth: 1)
+                    .stroke(isSelected ? TunerTheme.gold.opacity(0.72) : Color.clear, lineWidth: 1.2)
             )
         }
         .buttonStyle(.plain)
-    }
-
-    private var selectedFill: LinearGradient {
-        LinearGradient(
-            colors: [TunerTheme.copper.opacity(0.48), TunerTheme.gold.opacity(0.20)],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
     }
 }
 
@@ -442,43 +420,6 @@ private struct HTMLAudioPanel: View {
     }
 }
 
-private struct HTMLModePanel: View {
-    var body: some View {
-        HTMLGlassPanel {
-            VStack(spacing: 8) {
-                HTMLPanelTitle("调音模式")
-                HStack(spacing: 4) {
-                    Text("自动")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(TunerTheme.text)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(TunerTheme.copper.opacity(0.46))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .stroke(TunerTheme.gold.opacity(0.6), lineWidth: 1)
-                        )
-
-                    Text("手动")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(TunerTheme.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                }
-                Text("自动识别音高")
-                    .font(.caption2)
-                    .foregroundStyle(TunerTheme.muted)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-        }
-    }
-}
-
 private struct HTMLPanelTitle: View {
     let title: String
 
@@ -605,9 +546,9 @@ private struct TunerHeader: View {
     }
 
     private func header(fontSize: CGFloat, gearSize: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .lastTextBaseline, spacing: 8) {
                         Text("琵琶调音")
                             .font(.system(size: fontSize, weight: .black, design: .serif))
@@ -624,11 +565,6 @@ private struct TunerHeader: View {
                                     .stroke(TunerTheme.copper, lineWidth: 1)
                             )
                     }
-
-                    Text("选弦后，轻拨琴弦，App 会告诉你偏高还是偏低。")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundStyle(TunerTheme.muted)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
@@ -645,11 +581,14 @@ private struct TunerHeader: View {
 
 private struct CurrentSelectionPill: View {
     let string: PipaString
+    var showsLabel = true
 
     var body: some View {
         HStack(spacing: 8) {
-            Text("当前选择")
-                .foregroundStyle(TunerTheme.muted)
+            if showsLabel {
+                Text("当前选择")
+                    .foregroundStyle(TunerTheme.muted)
+            }
             Text(string.shortName)
                 .fontWeight(.bold)
                 .foregroundStyle(TunerTheme.gold)
