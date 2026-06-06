@@ -21,6 +21,8 @@ final class TunerViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private var lastDetectedFrequency: Double?
     private var lastConfidence: Double = 0
+    private var bestCurrentPluckDetection: PitchDetectionResult?
+    private var isCollectingPluck = false
 
     init() {
         recorder.onAudioFrame = { [weak self] frame in
@@ -80,6 +82,7 @@ final class TunerViewModel: ObservableObject {
             return
         }
 
+        publishBestCurrentPluckIfNeeded()
         recorder.stop()
         isListening = false
         microphoneStatusText = "麦克风已停止"
@@ -124,8 +127,30 @@ final class TunerViewModel: ObservableObject {
 
     func handleAudioFrame(_ frame: AudioAnalysisFrame) {
         inputActivityLevel = frame.activityLevel
-        recognitionStatusText = frame.activityLevel > 0.08 ? "识别中..." : "等待下一次拨弦"
-        handleDetection(frame.detection)
+        let isActiveFrame = frame.activityLevel > 0.08
+        recognitionStatusText = isActiveFrame ? "识别中..." : "等待下一次拨弦"
+
+        guard isActiveFrame else {
+            let didPublishResult = publishBestCurrentPluckIfNeeded()
+            guard !didPublishResult else {
+                return
+            }
+
+            if lastDetectedFrequency != nil {
+                microphoneStatusText = "等待下一次拨弦"
+            } else {
+                directionText = "请轻拨所选弦"
+                statusColorName = "secondary"
+            }
+            return
+        }
+
+        isCollectingPluck = true
+
+        if let detection = frame.detection {
+            collectBestDetection(detection)
+            recognitionStatusText = "已捕捉，等待声音结束"
+        }
     }
 
     func handleDetection(_ detection: PitchDetectionResult?) {
@@ -150,6 +175,45 @@ final class TunerViewModel: ObservableObject {
             confidence: detection.confidence
         )
         apply(result)
+    }
+
+    private func collectBestDetection(_ detection: PitchDetectionResult) {
+        guard let currentBest = bestCurrentPluckDetection else {
+            bestCurrentPluckDetection = detection
+            return
+        }
+
+        if detection.confidence > currentBest.confidence {
+            bestCurrentPluckDetection = detection
+        }
+    }
+
+    @discardableResult
+    private func publishBestCurrentPluckIfNeeded() -> Bool {
+        guard isCollectingPluck else {
+            return false
+        }
+
+        defer {
+            isCollectingPluck = false
+            bestCurrentPluckDetection = nil
+        }
+
+        guard let detection = bestCurrentPluckDetection else {
+            return false
+        }
+
+        lastDetectedFrequency = detection.frequency
+        lastConfidence = detection.confidence
+
+        let result = TuningGuide.evaluate(
+            detectedFrequency: detection.frequency,
+            targetFrequency: selectedString.targetFrequency,
+            confidence: detection.confidence
+        )
+        apply(result)
+        microphoneStatusText = "已显示本次最佳结果"
+        return true
     }
 
     private func apply(_ result: TuningResult) {

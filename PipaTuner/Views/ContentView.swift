@@ -12,10 +12,12 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     TunerHeader()
                     CurrentSelectionPill(string: viewModel.selectedString)
+                    PipaHeroCard(string: viewModel.selectedString, statusColor: statusColor)
                     StringPickerCard(selectedString: $viewModel.selectedString)
                     ReadoutCard(viewModel: viewModel)
                     DeviationMeterCard(centsOffset: viewModel.centsOffset, centsText: viewModel.centsText, statusColor: statusColor)
                     AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
+                    TuningModeCard()
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 22)
@@ -224,6 +226,169 @@ private struct StringPickerCard: View {
     }
 }
 
+private struct PipaHeroCard: View {
+    let string: PipaString
+    let statusColor: Color
+
+    var body: some View {
+        TunerCard {
+            VStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    TunerTheme.copper.opacity(0.26),
+                                    Color.black.opacity(0.05)
+                                ],
+                                center: .center,
+                                startRadius: 10,
+                                endRadius: 220
+                            )
+                        )
+                        .frame(height: 250)
+
+                    PipaSilhouette(highlightedString: string, statusColor: statusColor)
+                        .frame(width: 190, height: 235)
+                        .accessibilityHidden(true)
+                }
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("当前弦位")
+                            .font(.caption)
+                            .foregroundStyle(TunerTheme.muted)
+                        Text("\(string.shortName) · \(string.jianpuLabel)")
+                            .font(.headline)
+                            .foregroundStyle(TunerTheme.gold)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    Text(string.frequencyLabel)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(TunerTheme.text)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.2), in: Capsule())
+                }
+            }
+        }
+    }
+}
+
+private struct PipaSilhouette: View {
+    let highlightedString: PipaString
+    let statusColor: Color
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+            let bodyTop = height * 0.34
+            let bodyBottom = height * 0.96
+            let centerX = width / 2
+
+            ZStack {
+                PipaBodyShape()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.68, green: 0.33, blue: 0.12),
+                                Color(red: 0.36, green: 0.17, blue: 0.07),
+                                Color(red: 0.18, green: 0.10, blue: 0.06)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(
+                        PipaBodyShape()
+                            .stroke(Color.black.opacity(0.55), lineWidth: 8)
+                    )
+                    .frame(width: width * 0.82, height: height * 0.62)
+                    .position(x: centerX, y: height * 0.69)
+
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.58, green: 0.34, blue: 0.18),
+                                Color(red: 0.22, green: 0.13, blue: 0.09)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: width * 0.20, height: height * 0.56)
+                    .position(x: centerX, y: height * 0.38)
+
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(red: 0.18, green: 0.12, blue: 0.10))
+                    .frame(width: width * 0.30, height: height * 0.13)
+                    .position(x: centerX, y: height * 0.08)
+
+                ForEach(0..<9, id: \.self) { index in
+                    let y = bodyTop + CGFloat(index) * ((bodyBottom - bodyTop) / 10)
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(TunerTheme.gold.opacity(0.72))
+                        .frame(width: width * (0.30 + CGFloat(index) * 0.035), height: 3)
+                        .position(x: centerX, y: y)
+                }
+
+                ForEach(Array(PipaString.tuningOrder.enumerated()), id: \.element.id) { index, string in
+                    let offset = CGFloat(index) - 1.5
+                    let x = centerX + offset * width * 0.06
+                    Path { path in
+                        path.move(to: CGPoint(x: x, y: height * 0.12))
+                        path.addLine(to: CGPoint(x: x + offset * width * 0.035, y: height * 0.92))
+                    }
+                    .stroke(
+                        string == highlightedString ? statusColor : TunerTheme.text.opacity(0.42),
+                        style: StrokeStyle(lineWidth: string == highlightedString ? 2.2 : 1.1, lineCap: .round)
+                    )
+                    .shadow(color: string == highlightedString ? statusColor.opacity(0.72) : .clear, radius: 8, x: 0, y: 0)
+                }
+
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(TunerTheme.text)
+                    .frame(width: width * 0.48, height: 12)
+                    .position(x: centerX, y: height * 0.91)
+            }
+        }
+    }
+}
+
+private struct PipaBodyShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let top = CGPoint(x: rect.midX, y: rect.minY)
+        path.move(to: top)
+        path.addCurve(
+            to: CGPoint(x: rect.maxX * 0.88, y: rect.maxY * 0.86),
+            control1: CGPoint(x: rect.maxX * 0.76, y: rect.maxY * 0.20),
+            control2: CGPoint(x: rect.maxX, y: rect.maxY * 0.54)
+        )
+        path.addCurve(
+            to: CGPoint(x: rect.midX, y: rect.maxY),
+            control1: CGPoint(x: rect.maxX * 0.80, y: rect.maxY),
+            control2: CGPoint(x: rect.maxX * 0.62, y: rect.maxY)
+        )
+        path.addCurve(
+            to: CGPoint(x: rect.minX * 0.12, y: rect.maxY * 0.86),
+            control1: CGPoint(x: rect.maxX * 0.38, y: rect.maxY),
+            control2: CGPoint(x: rect.maxX * 0.20, y: rect.maxY)
+        )
+        path.addCurve(
+            to: top,
+            control1: CGPoint(x: rect.minX, y: rect.maxY * 0.54),
+            control2: CGPoint(x: rect.maxX * 0.24, y: rect.maxY * 0.20)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
 private struct StringOptionButton: View {
     let string: PipaString
     let isSelected: Bool
@@ -393,6 +558,7 @@ private struct DeviationMeterCard: View {
                             .frame(width: 18, height: 24)
                             .shadow(color: statusColor.opacity(0.75), radius: 10, x: 0, y: 0)
                             .position(x: centerX, y: indicatorY)
+                            .animation(.easeOut(duration: 0.45), value: centsOffset ?? 0)
 
                         VStack(alignment: .leading, spacing: 20) {
                             MeterLabel(text: "偏高", alignment: .top)
@@ -413,7 +579,7 @@ private struct DeviationMeterCard: View {
                         .padding(.vertical, 18)
 
                         VStack(spacing: 4) {
-                            Text(centsOffset == nil ? "0" : centsText)
+                            Text(centsOffset == nil ? "--" : centsText)
                                 .font(.system(size: 22, weight: .bold, design: .rounded))
                                 .foregroundStyle(TunerTheme.text)
                             Text("cents")
@@ -470,6 +636,70 @@ private struct AudioStatusCard: View {
                     .background(Color.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
         }
+    }
+}
+
+private struct TuningModeCard: View {
+    var body: some View {
+        TunerCard {
+            VStack(alignment: .leading, spacing: 16) {
+                SectionTitle(title: "调音模式", subtitle: "当前使用手动选弦，自动识别会在后续版本接入")
+
+                HStack(spacing: 12) {
+                    ModeChip(title: "手动", subtitle: "当前", isActive: true)
+                    ModeChip(title: "自动", subtitle: "待开发", isActive: false)
+                }
+            }
+        }
+    }
+}
+
+private struct ModeChip: View {
+    let title: String
+    let subtitle: String
+    let isActive: Bool
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(isActive ? Color(red: 0.12, green: 0.07, blue: 0.03) : TunerTheme.muted)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(isActive ? Color(red: 0.20, green: 0.10, blue: 0.04).opacity(0.78) : TunerTheme.muted.opacity(0.72))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isActive ? activeGradient : inactiveGradient)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(isActive ? TunerTheme.gold.opacity(0.78) : TunerTheme.border, lineWidth: 1)
+        )
+    }
+
+    private var activeGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                TunerTheme.gold,
+                TunerTheme.copper
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var inactiveGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(0.05),
+                Color.black.opacity(0.12)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }
 

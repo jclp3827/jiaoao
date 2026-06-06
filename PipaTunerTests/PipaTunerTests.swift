@@ -78,8 +78,36 @@ final class PipaTunerTests: XCTestCase {
         ))
 
         XCTAssertEqual(viewModel.inputActivityLevel, 0.6, accuracy: 0.001)
-        XCTAssertEqual(viewModel.recognitionStatusText, "识别中...")
+        XCTAssertEqual(viewModel.recognitionStatusText, "已捕捉，等待声音结束")
         XCTAssertEqual(viewModel.targetFrequencyText, PipaString.second.targetDisplayText)
+    }
+
+    @MainActor
+    func testAudioFramesPublishHighestConfidenceResultAfterPluckEnds() {
+        let viewModel = TunerViewModel()
+        viewModel.selectedString = .first
+
+        viewModel.handleAudioFrame(AudioAnalysisFrame(
+            detection: PitchDetectionResult(frequency: 430.0, confidence: 0.4, rms: 0.12),
+            activityLevel: 0.6
+        ))
+        viewModel.handleAudioFrame(AudioAnalysisFrame(
+            detection: PitchDetectionResult(frequency: 441.0, confidence: 0.95, rms: 0.16),
+            activityLevel: 0.7
+        ))
+        viewModel.handleAudioFrame(AudioAnalysisFrame(
+            detection: PitchDetectionResult(frequency: 448.0, confidence: 0.72, rms: 0.14),
+            activityLevel: 0.5
+        ))
+
+        XCTAssertEqual(viewModel.detectedFrequencyText, "--")
+        XCTAssertEqual(viewModel.recognitionStatusText, "已捕捉，等待声音结束")
+
+        viewModel.handleAudioFrame(AudioAnalysisFrame(detection: nil, activityLevel: 0))
+
+        XCTAssertEqual(viewModel.detectedFrequencyText, "441.0 Hz")
+        XCTAssertEqual(viewModel.confidenceText, "95%")
+        XCTAssertEqual(viewModel.microphoneStatusText, "已显示本次最佳结果")
     }
 
     @MainActor
@@ -90,6 +118,7 @@ final class PipaTunerTests: XCTestCase {
             activityLevel: 0.7
         ))
 
+        viewModel.handleAudioFrame(AudioAnalysisFrame(detection: nil, activityLevel: 0))
         let detectedFrequencyText = viewModel.detectedFrequencyText
         viewModel.handleAudioFrame(AudioAnalysisFrame(detection: nil, activityLevel: 0))
 
