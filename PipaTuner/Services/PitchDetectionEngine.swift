@@ -38,38 +38,80 @@ final class PitchDetectionEngine {
         }
 
         let centered = center(samples)
-        let windowed = applyHannWindow(centered)
 
         let minLag = max(2, Int(sampleRate / maximumFrequency))
         let maxLag = max(minLag + 1, Int(sampleRate / minimumFrequency))
 
-        var correlations: [Double] = []
-        correlations.reserveCapacity(maxLag - minLag + 1)
-
-        var bestLag = minLag
-        var bestCorrelation = -Double.greatestFiniteMagnitude
-
-        for lag in minLag...maxLag {
-            let correlation = normalizedAutoCorrelation(windowed, lag: lag)
-            correlations.append(correlation)
-
-            if correlation > bestCorrelation {
-                bestCorrelation = correlation
-                bestLag = lag
-            }
-        }
-
-        guard bestCorrelation > 0.2 else {
+        guard let pitch = yinPitch(samples: centered, sampleRate: sampleRate, minLag: minLag, maxLag: maxLag) else {
             return nil
         }
 
-        let refinedLag = parabolicRefinement(correlations: correlations, bestLag: bestLag, minLag: minLag)
+        return PitchDetectionResult(frequency: pitch.frequency, confidence: pitch.confidence, rms: rms)
+    }
+
+    private func yinPitch(samples: [Double], sampleRate: Double, minLag: Int, maxLag: Int) -> (frequency: Double, confidence: Double)? {
+        guard samples.count > maxLag else {
+            return nil
+        }
+
+        var difference = Array(repeating: 0.0, count: maxLag + 1)
+
+        for lag in 1...maxLag {
+            let limit = samples.count - lag
+            var sum = 0.0
+
+            for index in 0..<limit {
+                let delta = samples[index] - samples[index + lag]
+                sum += delta * delta
+            }
+
+            difference[lag] = sum
+        }
+
+        var cumulativeMeanNormalized = Array(repeating: 1.0, count: maxLag + 1)
+        var runningSum = 0.0
+
+        for lag in 1...maxLag {
+            runningSum += difference[lag]
+            cumulativeMeanNormalized[lag] = runningSum > 0 ? difference[lag] * Double(lag) / runningSum : 1.0
+        }
+
+        let threshold = 0.16
+        var selectedLag: Int?
+
+        for lag in minLag...maxLag {
+            guard cumulativeMeanNormalized[lag] < threshold else {
+                continue
+            }
+
+            var localMinimumLag = lag
+            while localMinimumLag + 1 <= maxLag && cumulativeMeanNormalized[localMinimumLag + 1] < cumulativeMeanNormalized[localMinimumLag] {
+                localMinimumLag += 1
+            }
+
+            selectedLag = localMinimumLag
+            break
+        }
+
+        if selectedLag == nil {
+            selectedLag = (minLag...maxLag).min(by: { cumulativeMeanNormalized[$0] < cumulativeMeanNormalized[$1] })
+        }
+
+        guard let selectedLag else {
+            return nil
+        }
+
+        let refinedLag = parabolicRefinement(values: cumulativeMeanNormalized, bestLag: selectedLag)
         guard refinedLag > 0 else {
             return nil
         }
 
-        let frequency = sampleRate / refinedLag
-        return PitchDetectionResult(frequency: frequency, confidence: bestCorrelation, rms: rms)
+        let confidence = max(0, min(1, 1.0 - cumulativeMeanNormalized[selectedLag]))
+        guard confidence > 0.2 else {
+            return nil
+        }
+
+        return (sampleRate / refinedLag, confidence)
     }
 
     private func mixDownSamples(channelData: UnsafePointer<UnsafeMutablePointer<Float>>, frameLength: Int, channelCount: Int) -> [Float] {
@@ -166,6 +208,27 @@ final class PitchDetectionEngine {
         let left = correlations[leftIndex]
         let center = correlations[bestIndex]
         let right = correlations[rightIndex]
+        let denominator = left - 2.0 * center + right
+
+        guard abs(denominator) > 0.000001 else {
+            return Double(bestLag)
+        }
+
+        let shift = 0.5 * (left - right) / denominator
+        return Double(bestLag) + shift
+    }
+
+    private func parabolicRefinement(values: [Double], bestLag: Int) -> Double {
+        let leftIndex = bestLag - 1
+        let rightIndex = bestLag + 1
+
+        guard values.indices.contains(leftIndex), values.indices.contains(bestLag), values.indices.contains(rightIndex) else {
+            return Double(bestLag)
+        }
+
+        let left = values[leftIndex]
+        let center = values[bestLag]
+        let right = values[rightIndex]
         let denominator = left - 2.0 * center + right
 
         guard abs(denominator) > 0.000001 else {

@@ -11,12 +11,16 @@ final class PipaTunerTests: XCTestCase {
 
     func testStringLabelsMatchReferenceTuning() {
         XCTAssertEqual(PipaString.fourth.displayPitchName, "大 A")
+        XCTAssertEqual(PipaString.fourth.roleName, "缠弦")
         XCTAssertEqual(PipaString.fourth.scientificNoteName, "A3")
         XCTAssertEqual(PipaString.third.displayPitchName, "d")
+        XCTAssertEqual(PipaString.third.roleName, "老弦")
         XCTAssertEqual(PipaString.third.scientificNoteName, "D4")
         XCTAssertEqual(PipaString.second.displayPitchName, "e")
+        XCTAssertEqual(PipaString.second.roleName, "中弦")
         XCTAssertEqual(PipaString.second.scientificNoteName, "E4")
         XCTAssertEqual(PipaString.first.displayPitchName, "a")
+        XCTAssertEqual(PipaString.first.roleName, "子弦")
         XCTAssertEqual(PipaString.first.scientificNoteName, "A4")
     }
 
@@ -145,8 +149,35 @@ final class PipaTunerTests: XCTestCase {
     }
 
     func testPitchDetectionRecognizesPureTone() {
+        assertDetectedPitch(frequency: 220.0)
+    }
+
+    func testPitchDetectionRecognizesAllPipaStringTargets() {
+        for string in PipaString.tuningOrder {
+            assertDetectedPitch(frequency: string.targetFrequency)
+        }
+    }
+
+    func testPitchDetectionPrefersFundamentalWhenSecondHarmonicIsPresent() {
         let sampleRate = 44_100.0
         let frequency = 220.0
+        let sampleCount = 8192
+        let samples = (0..<sampleCount).map { index -> Float in
+            let t = Double(index) / sampleRate
+            let fundamental = sin(2.0 * Double.pi * frequency * t) * 0.28
+            let secondHarmonic = sin(2.0 * Double.pi * frequency * 2.0 * t) * 0.20
+            return Float(fundamental + secondHarmonic)
+        }
+
+        let engine = PitchDetectionEngine()
+        let result = engine.detectPitch(from: samples, sampleRate: sampleRate)
+
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result?.frequency ?? 0, frequency, accuracy: 2.0)
+    }
+
+    private func assertDetectedPitch(frequency: Double, file: StaticString = #filePath, line: UInt = #line) {
+        let sampleRate = 44_100.0
         let sampleCount = 8192
         let samples = (0..<sampleCount).map { index -> Float in
             let t = Double(index) / sampleRate
@@ -156,7 +187,7 @@ final class PipaTunerTests: XCTestCase {
         let engine = PitchDetectionEngine()
         let result = engine.detectPitch(from: samples, sampleRate: sampleRate)
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.frequency ?? 0, frequency, accuracy: 2.0)
+        XCTAssertNotNil(result, file: file, line: line)
+        XCTAssertEqual(result?.frequency ?? 0, frequency, accuracy: 2.0, file: file, line: line)
     }
 }

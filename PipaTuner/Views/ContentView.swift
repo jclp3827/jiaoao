@@ -100,6 +100,7 @@ private struct HTMLStyleCompactDashboard: View {
                 let height = proxy.size.height
                 let leftWidth = min(112, width * 0.30)
                 let rightWidth = min(122, width * 0.32)
+                let panelSpacing: CGFloat = 12
 
                 ZStack {
                     Image("pipaHero")
@@ -122,17 +123,17 @@ private struct HTMLStyleCompactDashboard: View {
                     .allowsHitTesting(false)
 
                     HStack(alignment: .top, spacing: 0) {
-                        VStack(spacing: 12) {
+                        VStack(spacing: panelSpacing) {
                             HTMLStringPickerPanel(selectedString: $selectedString)
-                                .frame(height: 188)
+                                .fixedSize(horizontal: false, vertical: true)
                             HTMLDeviationPanel(centsOffset: viewModel.centsOffset, statusColor: statusColor)
-                                .frame(height: 292)
+                                .frame(height: 274)
                         }
                         .frame(width: leftWidth)
 
                         Spacer(minLength: 0)
 
-                        VStack(spacing: 12) {
+                        VStack(spacing: panelSpacing) {
                             HTMLReadoutPanel(viewModel: viewModel)
                             HTMLTargetPanel(string: selectedString)
                             HTMLConfidencePanel(confidenceText: viewModel.confidenceText)
@@ -142,10 +143,7 @@ private struct HTMLStyleCompactDashboard: View {
                     }
                 }
             }
-            .frame(height: 506)
-
-            CurrentSelectionPill(string: selectedString, showsLabel: false)
-                .frame(maxWidth: 320)
+            .frame(height: 486)
         }
     }
 }
@@ -207,11 +205,9 @@ private struct HTMLStringOption: View {
                     Text(string.shortName)
                         .font(.system(size: 15, weight: .bold, design: .serif))
                         .foregroundStyle(isSelected ? TunerTheme.text : TunerTheme.muted.opacity(0.70))
-                    if isSelected {
-                        Text(string.jianpuLabel)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(TunerTheme.gold.opacity(0.92))
-                    }
+                    Text(string.roleName)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(isSelected ? TunerTheme.gold.opacity(0.92) : TunerTheme.muted.opacity(0.56))
                 }
 
                 Spacer(minLength: 0)
@@ -1294,7 +1290,7 @@ private struct TunerActionBar: View {
                         .fill(Color.black.opacity(0.24))
                         .frame(width: 1, height: 30)
 
-                    Text(isListening ? "停止监听" : "开始监听")
+                    Text(isListening ? "停止调弦" : "开始调弦")
                         .font(.system(size: 26, weight: .black, design: .serif))
 
                     Spacer(minLength: 0)

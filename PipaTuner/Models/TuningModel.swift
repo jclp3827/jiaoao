@@ -19,6 +19,15 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    var roleName: String {
+        switch self {
+        case .fourth: return "缠弦"
+        case .third: return "老弦"
+        case .second: return "中弦"
+        case .first: return "子弦"
+        }
+    }
+
     var scientificNoteName: String {
         switch self {
         case .fourth: return "A3"
