@@ -16,11 +16,10 @@ struct ContentView: View {
                         selectedString: $viewModel.selectedString,
                         statusColor: statusColor
                     )
-                    CurrentSelectionPill(string: viewModel.selectedString)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 22)
-                .padding(.bottom, 118)
+                .padding(.top, 18)
+                .padding(.bottom, 150)
             }
             .scrollIndicators(.hidden)
         }
@@ -77,15 +76,16 @@ private struct TunerDashboard: View {
     }
 
     private var compactLayout: some View {
-        VStack(spacing: 18) {
-            PipaHeroStage(string: selectedString, statusColor: statusColor)
-                .frame(height: 520)
+        VStack(spacing: 14) {
+            CompactHeroStage(
+                viewModel: viewModel,
+                string: selectedString,
+                statusColor: statusColor
+            )
+            .frame(height: 500)
 
             StringPickerCard(selectedString: $selectedString)
-            ReadoutCard(viewModel: viewModel)
-            TargetPitchCard(string: selectedString)
             DeviationMeterCard(centsOffset: viewModel.centsOffset, centsText: viewModel.centsText, statusColor: statusColor)
-            ConfidenceCard(confidenceText: viewModel.confidenceText)
             AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
             TuningModeCard()
         }
@@ -190,12 +190,19 @@ private struct TunerCard<Content: View>: View {
 
 private struct TunerHeader: View {
     var body: some View {
+        ViewThatFits(in: .horizontal) {
+            header(fontSize: 42, gearSize: 28)
+            header(fontSize: 36, gearSize: 25)
+        }
+    }
+
+    private func header(fontSize: CGFloat, gearSize: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
+            HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .lastTextBaseline, spacing: 8) {
                         Text("琵琶调音")
-                            .font(.system(size: 42, weight: .black, design: .serif))
+                            .font(.system(size: fontSize, weight: .black, design: .serif))
                             .foregroundStyle(TunerTheme.text)
                             .shadow(color: TunerTheme.copper.opacity(0.38), radius: 8, x: 0, y: 3)
 
@@ -211,14 +218,15 @@ private struct TunerHeader: View {
                     }
 
                     Text("选弦后，轻拨琴弦，App 会告诉你偏高还是偏低。")
-                        .font(.callout)
+                        .font(.system(size: 18, weight: .regular))
                         .foregroundStyle(TunerTheme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Spacer(minLength: 12)
+                Spacer(minLength: 0)
 
                 Image(systemName: "gearshape")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.system(size: gearSize, weight: .semibold))
                     .foregroundStyle(TunerTheme.gold)
                     .padding(.top, 4)
                     .accessibilityLabel("设置")
@@ -311,25 +319,144 @@ private struct PipaHeroStage: View {
 
             VStack(spacing: 14) {
                 Spacer()
-                HStack(spacing: 6) {
-                    Text("当前选择：")
-                        .foregroundStyle(TunerTheme.muted)
-                    Text("\(string.shortName)（\(string.rawValue.replacingOccurrences(of: string.shortName, with: "").replacingOccurrences(of: "（", with: "").replacingOccurrences(of: "）", with: ""))）")
-                        .fontWeight(.bold)
-                        .foregroundStyle(TunerTheme.gold)
-                }
-                .font(.callout)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 10)
-                .background(Color.black.opacity(0.36), in: Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(TunerTheme.border, lineWidth: 1)
-                )
+                CurrentSelectionPill(string: string)
+                    .frame(maxWidth: 360)
             }
-            .padding(.bottom, 10)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 2)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+private struct CompactHeroStage: View {
+    @ObservedObject var viewModel: TunerViewModel
+    let string: PipaString
+    let statusColor: Color
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+            let sideCardWidth = min(126, width * 0.35)
+            let imageWidth = min(width * 0.70, 260)
+
+            ZStack {
+                RadialGradient(
+                    colors: [
+                        TunerTheme.gold.opacity(0.18),
+                        TunerTheme.copper.opacity(0.08),
+                        .clear
+                    ],
+                    center: .center,
+                    startRadius: 16,
+                    endRadius: 250
+                )
+                .frame(width: width * 1.08, height: height * 0.82)
+                .position(x: width / 2, y: height * 0.45)
+
+                Image("pipaHero")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: imageWidth, height: height * 0.92)
+                    .shadow(color: .black.opacity(0.58), radius: 24, x: 0, y: 18)
+                    .shadow(color: statusColor.opacity(0.16), radius: 18, x: 0, y: 0)
+                    .position(x: width / 2, y: height * 0.44)
+                    .accessibilityLabel("琵琶")
+
+                CompactMetricBadge(
+                    title: "实时结果",
+                    primary: viewModel.selectedString.displayPitchName,
+                    secondary: viewModel.detectedFrequencyText,
+                    alignment: .leading
+                )
+                .frame(width: sideCardWidth)
+                .position(x: sideCardWidth / 2 + 2, y: height * 0.23)
+
+                CompactMetricBadge(
+                    title: "目标音高",
+                    primary: string.displayPitchName,
+                    secondary: string.frequencyLabel,
+                    alignment: .trailing
+                )
+                .frame(width: sideCardWidth)
+                .position(x: width - sideCardWidth / 2 - 2, y: height * 0.31)
+
+                CompactMetricBadge(
+                    title: "偏差",
+                    primary: viewModel.centsOffset == nil ? "--" : viewModel.centsText,
+                    secondary: viewModel.directionText,
+                    alignment: .leading
+                )
+                .frame(width: sideCardWidth)
+                .position(x: sideCardWidth / 2 + 6, y: height * 0.56)
+
+                CompactMetricBadge(
+                    title: "置信度",
+                    primary: viewModel.confidenceText,
+                    secondary: viewModel.recognitionStatusText,
+                    alignment: .trailing
+                )
+                .frame(width: sideCardWidth)
+                .position(x: width - sideCardWidth / 2 - 6, y: height * 0.64)
+
+                CurrentSelectionPill(string: string)
+                    .frame(maxWidth: min(300, width - 36))
+                    .position(x: width / 2, y: height - 28)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct CompactMetricBadge: View {
+    let title: String
+    let primary: String
+    let secondary: String
+    let alignment: HorizontalAlignment
+
+    var body: some View {
+        VStack(alignment: alignment, spacing: 5) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(TunerTheme.muted)
+                .lineLimit(1)
+            Text(primary)
+                .font(.system(size: 24, weight: .black, design: .serif))
+                .foregroundStyle(TunerTheme.gold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+            Text(secondary)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(TunerTheme.text.opacity(0.86))
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+        .frame(maxWidth: .infinity, alignment: frameAlignment)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            TunerTheme.panelRaised.opacity(0.84),
+                            Color.black.opacity(0.28)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(TunerTheme.border, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.24), radius: 14, x: 0, y: 9)
+    }
+
+    private var frameAlignment: Alignment {
+        alignment == .trailing ? .trailing : .leading
     }
 }
 
