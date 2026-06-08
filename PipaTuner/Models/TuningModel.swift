@@ -1,5 +1,26 @@
 import Foundation
 
+enum TuningMode: String, CaseIterable, Identifiable, Codable {
+    case manual
+    case auto
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .manual: return "手动"
+        case .auto: return "自动"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .manual: return "手选弦"
+        case .auto: return "自动判弦"
+        }
+    }
+}
+
 enum PipaString: String, CaseIterable, Identifiable, Codable {
     case fourth = "四弦（缠弦）"
     case third = "三弦（老弦）"
@@ -30,19 +51,19 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
 
     var scientificNoteName: String {
         switch self {
-        case .fourth: return "A3"
-        case .third: return "D4"
-        case .second: return "E4"
-        case .first: return "A4"
+        case .fourth: return "A2"
+        case .third: return "D3"
+        case .second: return "E3"
+        case .first: return "A3"
         }
     }
 
     var targetFrequency: Double {
         switch self {
-        case .fourth: return 220.0
-        case .third: return 293.6
-        case .second: return 329.6
-        case .first: return 440.0
+        case .fourth: return 110.0
+        case .third: return 146.8
+        case .second: return 164.8
+        case .first: return 220.0
         }
     }
 
@@ -57,10 +78,10 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
 
     var frequencyLabel: String {
         switch self {
-        case .fourth: return "220 Hz"
-        case .third: return "293.6 Hz"
-        case .second: return "329.6 Hz"
-        case .first: return "440 Hz"
+        case .fourth: return "110 Hz"
+        case .third: return "146.8 Hz"
+        case .second: return "164.8 Hz"
+        case .first: return "220 Hz"
         }
     }
 
@@ -70,19 +91,45 @@ enum PipaString: String, CaseIterable, Identifiable, Codable {
 
     var jianpuLabel: String {
         switch self {
-        case .fourth: return "低音 5"
-        case .third: return "中音 1"
-        case .second: return "中音 2"
-        case .first: return "中音 5"
+        case .fourth: return "倍低音 5"
+        case .third: return "低音 1"
+        case .second: return "低音 2"
+        case .first: return "低音 5"
         }
     }
 
     var tuningHint: String {
         switch self {
-        case .fourth: return "把缠弦调到大 A，220 Hz。"
-        case .third: return "把老弦调到 d，293.6 Hz。"
-        case .second: return "把中弦调到 e，329.6 Hz。"
-        case .first: return "把子弦调到 a，440 Hz。"
+        case .fourth: return "把缠弦调到大 A，110 Hz。"
+        case .third: return "把老弦调到 d，146.8 Hz。"
+        case .second: return "把中弦调到 e，164.8 Hz。"
+        case .first: return "把子弦调到 a，220 Hz。"
+        }
+    }
+
+    static func primaryAutoBandString(for rawFrequency: Double) -> PipaString? {
+        let cappedUpper = first.targetFrequency * TunerConfiguration.AutoClassification.primaryBandUpperMultiplier
+        let cappedLower = max(
+            TunerConfiguration.PitchDetection.minimumFrequency,
+            fourth.targetFrequency * TunerConfiguration.AutoClassification.primaryBandLowerMultiplier
+        )
+        guard rawFrequency >= cappedLower, rawFrequency <= cappedUpper else {
+            return nil
+        }
+
+        let fourthThirdBoundary = sqrt(fourth.targetFrequency * third.targetFrequency)
+        let thirdSecondBoundary = sqrt(third.targetFrequency * second.targetFrequency)
+        let secondFirstBoundary = sqrt(second.targetFrequency * first.targetFrequency)
+
+        switch rawFrequency {
+        case ..<fourthThirdBoundary:
+            return .fourth
+        case ..<thirdSecondBoundary:
+            return .third
+        case ..<secondFirstBoundary:
+            return .second
+        default:
+            return .first
         }
     }
 }
@@ -125,15 +172,15 @@ struct TuningResult {
 }
 
 enum TuningGuide {
-    static let inTuneThresholdCents = 12.0
-    static let silenceThreshold = 0.01
+    static let inTuneThresholdCents = TunerConfiguration.Tuning.inTuneThresholdCents
+    static let silenceThreshold = TunerConfiguration.PitchDetection.silenceRMS
 
     static func evaluate(detectedFrequency: Double, targetFrequency: Double, confidence: Double) -> TuningResult {
-        let cents = 1200.0 * log2(detectedFrequency / targetFrequency)
+        let cents = TunerConfiguration.Tuning.centsOctaveUnit * log2(detectedFrequency / targetFrequency)
         let absoluteCents = abs(cents)
         let direction: TuningDirection
 
-        if confidence < 0.2 {
+        if confidence < TunerConfiguration.PitchDetection.minimumConfidence {
             direction = .silent
         } else if absoluteCents <= inTuneThresholdCents {
             direction = .inTune
@@ -155,5 +202,77 @@ enum TuningGuide {
     static func confidenceLabel(_ confidence: Double) -> String {
         let percentage = max(0, min(100, Int((confidence * 100).rounded())))
         return "\(percentage)%"
+    }
+}
+
+struct NormalizedPitchCandidate: Equatable {
+    let frequency: Double
+    let cents: Double
+    let divisor: Double
+    let multiplier: Double
+    let score: Double
+
+    var isWithinDisplayRange: Bool {
+        abs(cents) <= TunerConfiguration.Tuning.centsDisplayRange
+    }
+}
+
+enum PitchNormalization {
+    static func bestCandidate(
+        from detectedFrequency: Double,
+        targetFrequency: Double
+    ) -> NormalizedPitchCandidate? {
+        let divisors = TunerConfiguration.Harmonics.divisors
+        let multipliers = TunerConfiguration.Harmonics.multipliers
+        var best: NormalizedPitchCandidate?
+
+        for divisor in divisors {
+            guard shouldUseDivisor(
+                divisor,
+                detectedFrequency: detectedFrequency,
+                targetFrequency: targetFrequency
+            ) else {
+                continue
+            }
+
+            for multiplier in multipliers {
+                let frequency = detectedFrequency / divisor * multiplier
+                let cents = TunerConfiguration.Tuning.centsOctaveUnit * log2(frequency / targetFrequency)
+                let harmonicPenalty = divisor == 1.0 ? 0.0 : TunerConfiguration.Harmonics.harmonicPenalty * log2(divisor)
+                let subharmonicPenalty = multiplier == 1.0 ? 0.0 : TunerConfiguration.Harmonics.subharmonicPenalty * log2(multiplier)
+                let candidate = NormalizedPitchCandidate(
+                    frequency: frequency,
+                    cents: cents,
+                    divisor: divisor,
+                    multiplier: multiplier,
+                    score: abs(cents) + harmonicPenalty + subharmonicPenalty
+                )
+
+                if best == nil || candidate.score < best!.score {
+                    best = candidate
+                }
+            }
+        }
+
+        guard let best, best.isWithinDisplayRange else {
+            return nil
+        }
+
+        return best
+    }
+
+    private static func shouldUseDivisor(
+        _ divisor: Double,
+        detectedFrequency: Double,
+        targetFrequency: Double
+    ) -> Bool {
+        guard divisor > 1.0 else {
+            return true
+        }
+
+        let harmonicFrequency = targetFrequency * divisor
+        let centsFromExpectedHarmonic = TunerConfiguration.Tuning.centsOctaveUnit
+            * log2(detectedFrequency / harmonicFrequency)
+        return abs(centsFromExpectedHarmonic) <= TunerConfiguration.Harmonics.harmonicMatchWindowCents
     }
 }

@@ -4,9 +4,11 @@ import Foundation
 
 @MainActor
 final class TunerViewModel: ObservableObject {
+    @Published var tuningMode: TuningMode = .manual
     @Published var selectedString: PipaString = .first
+    @Published private(set) var activeString: PipaString = .first
     @Published var detectedFrequencyText: String = "--"
-    @Published var targetFrequencyText: String = "440 Hz"
+    @Published var targetFrequencyText: String = PipaString.first.targetDisplayText
     @Published var centsText: String = "--"
     @Published var directionText: String = "点击开始，准备拾音"
     @Published var confidenceText: String = "0%"
@@ -16,16 +18,24 @@ final class TunerViewModel: ObservableObject {
     @Published var centsOffset: Double?
     @Published var inputActivityLevel: Double = 0
     @Published var recognitionStatusText: String = "未开始"
+    @Published var showsDiagnostics: Bool = false
+    @Published private(set) var diagnostics = TunerDiagnostics()
+    @Published private(set) var autoStatusText: String = "等待判弦"
+    @Published private(set) var isStartingAudio = false
 
-    private let recorder = AudioRecorder()
+    private let audioController = TunerAudioController()
+    private let statusPresenter = TunerStatusPresenter()
+    private let session = TuningSessionCoordinator()
+    private let autoTargetSelector = AutoTuningTargetSelector()
+    private let diagnosticsReporter = TunerDiagnosticsReporter()
+    private let frameProcessor = TuningFrameProcessor()
+    private let readoutPresenter = TuningReadoutPresenter()
     private var cancellables: Set<AnyCancellable> = []
     private var lastDetectedFrequency: Double?
     private var lastConfidence: Double = 0
-    private var bestCurrentPluckDetection: PitchDetectionResult?
-    private var isCollectingPluck = false
 
     init() {
-        recorder.onAudioFrame = { [weak self] frame in
+        audioController.onAudioFrame = { [weak self] frame in
             DispatchQueue.main.async {
                 self?.handleAudioFrame(frame)
             }
@@ -34,65 +44,86 @@ final class TunerViewModel: ObservableObject {
         $selectedString
             .dropFirst()
             .sink { [weak self] string in
-                self?.recalculateLastResult(for: string)
+                self?.handleSelectedStringChanged(string)
+            }
+            .store(in: &cancellables)
+
+        $tuningMode
+            .dropFirst()
+            .sink { [weak self] mode in
+                self?.handleTuningModeChanged(mode)
             }
             .store(in: &cancellables)
 
         updateTargetLabels()
+        refreshDiagnostics()
     }
 
     func startListening() {
-        guard !isListening else {
+        guard !isListening, !isStartingAudio else {
             return
         }
 
-        microphoneStatusText = "正在请求麦克风权限..."
+        isStartingAudio = true
+        microphoneStatusText = statusPresenter.requestingPermissionText
 
-        recorder.requestRecordPermission { [weak self] granted in
-            DispatchQueue.main.async {
+        audioController.start(
+            targetFrequency: recorderTargetFrequency,
+            onPermissionGranted: { [weak self] in
                 guard let self else { return }
-
-                guard granted else {
-                    self.isListening = false
-                    self.microphoneStatusText = "麦克风权限未开启"
-                    self.directionText = "请在系统设置中允许麦克风"
-                    self.statusColorName = "red"
-                    return
-                }
-
-                do {
-                    try self.recorder.start()
-                    self.isListening = true
-                    self.microphoneStatusText = "正在监听所选弦"
-                    self.recognitionStatusText = "等待拨弦"
-                    self.directionText = self.selectedString.tuningHint
-                    self.statusColorName = "secondary"
-                } catch {
-                    self.isListening = false
-                    self.microphoneStatusText = "启动失败"
-                    self.directionText = "请检查麦克风权限和音频会话"
-                    self.statusColorName = "red"
-                }
+                microphoneStatusText = statusPresenter.startingMicrophoneText
+            },
+            completion: { [weak self] result in
+                self?.handleAudioStartResult(result)
             }
+        )
+    }
+
+    private func handleAudioStartResult(_ result: TunerAudioStartResult) {
+        isStartingAudio = false
+
+        switch result {
+        case .started:
+            isListening = true
+            microphoneStatusText = statusPresenter.microphoneListeningText
+            recognitionStatusText = statusPresenter.waitingPluckText
+            directionText = statusPresenter.listeningPrompt(for: activeString, mode: tuningMode)
+            statusColorName = "secondary"
+
+        case .permissionDenied:
+            isListening = false
+            microphoneStatusText = statusPresenter.permissionDeniedText
+            directionText = statusPresenter.permissionDirectionText
+            statusColorName = "red"
+
+        case .failed:
+            isListening = false
+            microphoneStatusText = statusPresenter.startFailedText
+            directionText = statusPresenter.startFailedDirectionText
+            statusColorName = "red"
         }
     }
 
     func stopListening() {
-        guard isListening else {
+        guard isListening, !isStartingAudio else {
             return
         }
 
-        publishBestCurrentPluckIfNeeded()
-        recorder.stop()
+        publishLockedCurrentPluckIfNeeded()
+        audioController.stop()
         isListening = false
-        microphoneStatusText = "麦克风已停止"
-        recognitionStatusText = "已停止"
+        microphoneStatusText = statusPresenter.microphoneStoppedText
+        recognitionStatusText = statusPresenter.recognitionStoppedText
         inputActivityLevel = 0
-        directionText = selectedString.tuningHint
+        directionText = activeString.tuningHint
         statusColorName = "secondary"
     }
 
     func toggleListening() {
+        guard !isStartingAudio else {
+            return
+        }
+
         if isListening {
             stopListening()
         } else {
@@ -100,20 +131,26 @@ final class TunerViewModel: ObservableObject {
         }
     }
 
+    func toggleDiagnostics() {
+        guard TunerConfiguration.Diagnostics.isEnabled else {
+            return
+        }
+        showsDiagnostics.toggle()
+    }
+
+    func toggleTuningMode() {
+        tuningMode = tuningMode == .manual ? .auto : .manual
+    }
+
     func recalculateLastResult() {
-        recalculateLastResult(for: selectedString)
+        recalculateLastResult(for: effectiveTargetString)
     }
 
     private func recalculateLastResult(for string: PipaString) {
         updateTargetLabels(for: string)
 
         guard let lastDetectedFrequency else {
-            directionText = string.tuningHint
-            centsText = "--"
-            centsOffset = nil
-            confidenceText = "0%"
-            detectedFrequencyText = "--"
-            statusColorName = "secondary"
+            clearReadout(directionText: string.tuningHint)
             return
         }
 
@@ -122,204 +159,366 @@ final class TunerViewModel: ObservableObject {
             targetFrequency: string.targetFrequency,
             confidence: lastConfidence
         )
-        apply(result)
+        apply(result, for: string)
+    }
+
+    private func handleSelectedStringChanged(_ string: PipaString) {
+        guard tuningMode == .manual else {
+            handleAutoModeSelectionChange(string)
+            refreshDiagnostics()
+            return
+        }
+
+        resetManualSelectionState(to: string)
+        diagnosticsReporter.clearCaptureHistory(in: &diagnostics)
+        refreshDiagnostics()
+    }
+
+    private func handleAutoModeSelectionChange(_ string: PipaString) {
+        configureRecorderTarget()
+        if session.lastAutoDetectedString == nil, session.capturedPluckString == nil {
+            syncActiveString(with: string)
+        }
+    }
+
+    private func resetManualSelectionState(to string: PipaString) {
+        syncActiveString(with: string)
+        updateTargetLabels(for: string)
+        configureRecorderTarget()
+        lastDetectedFrequency = nil
+        lastConfidence = 0
+        session.resetForManualSelectionChange()
+        clearReadout(directionText: statusPresenter.listeningPrompt(for: string, mode: tuningMode))
+        updateWaitingStatus(for: string, mode: tuningMode)
     }
 
     func handleAudioFrame(_ frame: AudioAnalysisFrame) {
         inputActivityLevel = frame.activityLevel
-        let isActiveFrame = frame.activityLevel > 0.08
-        recognitionStatusText = isActiveFrame ? "识别中..." : "等待下一次拨弦"
-
+        let isActiveFrame = frame.activityLevel > TunerConfiguration.AudioInput.activeFrameLevel
         guard isActiveFrame else {
-            let didPublishResult = publishBestCurrentPluckIfNeeded()
-            guard !didPublishResult else {
-                return
-            }
-
-            if lastDetectedFrequency != nil {
-                microphoneStatusText = "等待下一次拨弦"
-            } else {
-                directionText = "请轻拨所选弦"
-                statusColorName = "secondary"
-            }
+            handleInactiveAudioFrame(frame)
             return
         }
 
-        isCollectingPluck = true
+        beginActiveAudioFrame(frame)
 
-        if let detection = frame.detection {
-            collectBestDetection(detection)
-            recognitionStatusText = "已捕捉，等待声音结束"
+        if let rawDetection = frame.rawDetection {
+            handleRawDetectionFrame(frame, rawDetection: rawDetection)
+        } else if tuningMode == .auto, let assistedDetection = frame.assistedDetection {
+            handleAssistedOnlyFrame(frame, assistedDetection: assistedDetection)
+        } else {
+            diagnosticsReporter.recordAnalysisReason(frame.rawAnalysisReason, in: &diagnostics)
+            microphoneStatusText = statusPresenter.findingStablePitchText
         }
+        refreshDiagnostics()
     }
 
-    func handleDetection(_ detection: PitchDetectionResult?) {
-        guard let detection else {
-            guard lastDetectedFrequency != nil else {
-                directionText = "请轻拨所选弦"
-                statusColorName = "secondary"
-                return
-            }
-
-            microphoneStatusText = "等待下一次拨弦"
-            statusColorName = "secondary"
-            return
-        }
-
-        lastDetectedFrequency = detection.frequency
-        lastConfidence = detection.confidence
-
-        let result = TuningGuide.evaluate(
-            detectedFrequency: detection.frequency,
-            targetFrequency: selectedString.targetFrequency,
-            confidence: detection.confidence
+    private func handleInactiveAudioFrame(_ frame: AudioAnalysisFrame) {
+        recognitionStatusText = statusPresenter.waitingNextPluckText
+        diagnosticsReporter.updateActivity(
+            level: frame.activityLevel,
+            activeFrameCount: session.activeFrameCount,
+            isActiveFrame: false,
+            in: &diagnostics
         )
-        apply(result)
-    }
 
-    private func collectBestDetection(_ detection: PitchDetectionResult) {
-        guard let currentBest = bestCurrentPluckDetection else {
-            bestCurrentPluckDetection = detection
+        let didPublishResult = publishLockedCurrentPluckIfNeeded()
+        guard !didPublishResult else {
             return
         }
 
-        if detection.confidence > currentBest.confidence {
-            bestCurrentPluckDetection = detection
+        if lastDetectedFrequency != nil {
+            microphoneStatusText = statusPresenter.waitingNextPluckText
+        } else {
+            directionText = statusPresenter.lightPluckText
+            statusColorName = "secondary"
         }
+        refreshDiagnostics()
+    }
+
+    private func beginActiveAudioFrame(_ frame: AudioAnalysisFrame) {
+        recognitionStatusText = statusPresenter.activeRecognizingText
+        diagnosticsReporter.updateActivity(
+            level: frame.activityLevel,
+            activeFrameCount: session.activeFrameCount,
+            isActiveFrame: true,
+            in: &diagnostics
+        )
+        session.beginActiveFrame()
+        diagnosticsReporter.updateActivity(
+            level: frame.activityLevel,
+            activeFrameCount: session.activeFrameCount,
+            isActiveFrame: true,
+            in: &diagnostics
+        )
+    }
+
+    private func handleRawDetectionFrame(
+        _ frame: AudioAnalysisFrame,
+        rawDetection: PitchDetectionResult
+    ) {
+        diagnosticsReporter.recordRawDetection(rawDetection, in: &diagnostics)
+
+        let targetString = resolveTargetString(for: rawDetection)
+
+        if let assistedDetection = frame.assistedDetection,
+           abs(assistedDetection.frequency - rawDetection.frequency) > 0.5 {
+            diagnosticsReporter.recordAssistedDetection(assistedDetection, in: &diagnostics)
+        }
+
+        if let targetString {
+            collectDetection(rawDetection, for: targetString)
+        }
+        markFrameAnalyzing()
+    }
+
+    private func handleAssistedOnlyFrame(
+        _ frame: AudioAnalysisFrame,
+        assistedDetection: PitchDetectionResult
+    ) {
+        diagnosticsReporter.recordAnalysisReason(frame.rawAnalysisReason, in: &diagnostics)
+        diagnosticsReporter.recordAssistedDetection(assistedDetection, in: &diagnostics)
+        collectDetection(assistedDetection, for: effectiveTargetString)
+        markFrameAnalyzing()
+    }
+
+    private func markFrameAnalyzing() {
+        recognitionStatusText = statusPresenter.recognizingUntilReleaseText
+        microphoneStatusText = statusPresenter.analyzingPluckText
+    }
+
+    private func collectDetection(_ detection: PitchDetectionResult, for string: PipaString) {
+        switch frameProcessor.process(detection, for: string, mode: tuningMode) {
+        case .rejected(let reason):
+            handleRejectedDetection(reason)
+            return
+
+        case .accepted(let accepted):
+            recordAcceptedDetection(accepted, for: string)
+        }
+    }
+
+    private func handleRejectedDetection(_ reason: TuningFrameRejectionReason) {
+        diagnosticsReporter.recordRejectedDetection(reason, in: &diagnostics)
+        switch reason {
+        case .manualHighHarmonic:
+            microphoneStatusText = statusPresenter.highHarmonicText
+        case .lowConfidence, .outsideTargetRange:
+            break
+        }
+        refreshDiagnostics()
+    }
+
+    private func recordAcceptedDetection(_ accepted: TuningFrameAcceptedDetection, for string: PipaString) {
+        let acceptedDetection = accepted.detection
+        session.recordAcceptedDetection(acceptedDetection)
+        diagnosticsReporter.recordAcceptedDetection(
+            accepted,
+            string: string,
+            tuningMode: tuningMode,
+            acceptedDetectionCount: session.acceptedDetectionCount,
+            in: &diagnostics
+        )
+        let result = TuningGuide.evaluate(
+            detectedFrequency: acceptedDetection.frequency,
+            targetFrequency: string.targetFrequency,
+            confidence: acceptedDetection.confidence
+        )
+        apply(result, for: string)
     }
 
     @discardableResult
-    private func publishBestCurrentPluckIfNeeded() -> Bool {
-        guard isCollectingPluck else {
+    private func publishLockedCurrentPluckIfNeeded() -> Bool {
+        guard session.isCollectingPluck else {
             return false
         }
 
-        defer {
-            isCollectingPluck = false
-            bestCurrentPluckDetection = nil
-        }
+        let targetString = effectiveTargetString
+        let hadActiveFrames = session.activeFrameCount > 0
 
-        guard let detection = bestCurrentPluckDetection else {
+        guard let lockedDetection = session.finishPluck() else {
+            if hadActiveFrames {
+                showUnstablePitch()
+                return true
+            }
+
             return false
         }
 
-        lastDetectedFrequency = detection.frequency
-        lastConfidence = detection.confidence
+        lastDetectedFrequency = lockedDetection.frequency
+        lastConfidence = lockedDetection.confidence
 
         let result = TuningGuide.evaluate(
-            detectedFrequency: detection.frequency,
-            targetFrequency: selectedString.targetFrequency,
-            confidence: detection.confidence
+            detectedFrequency: lockedDetection.frequency,
+            targetFrequency: targetString.targetFrequency,
+            confidence: lockedDetection.confidence
         )
-        apply(result)
-        microphoneStatusText = "已显示本次最佳结果"
+        publishLockedDetection(
+            lockedDetection,
+            for: targetString,
+            eventLabel: statusPresenter.lockedEventLabel,
+            microphoneStatus: statusPresenter.lockedMicrophoneText,
+            recognitionStatus: statusPresenter.lockedRecognitionText,
+            result: result
+        )
         return true
     }
 
-    private func apply(_ result: TuningResult) {
-        detectedFrequencyText = result.frequencyText
-        centsText = result.centsText
-        centsOffset = result.centsOffset
-        confidenceText = TuningGuide.confidenceLabel(result.confidence)
-        directionText = result.directionText
-        statusColorName = colorName(for: result.direction)
+    private func showUnstablePitch() {
+        clearReadout(directionText: statusPresenter.unstableDirectionText)
+        microphoneStatusText = statusPresenter.unstableMicrophoneText
+        recognitionStatusText = statusPresenter.unstableRecognitionText
+        diagnosticsReporter.recordUnstablePluck(
+            lockedString: effectiveTargetString,
+            tuningMode: tuningMode,
+            autoDetectedString: currentAutoDetectedString,
+            eventText: statusPresenter.unstableEventText,
+            in: &diagnostics
+        )
+        refreshDiagnostics()
+    }
+
+    private func clearReadout(directionText: String) {
+        detectedFrequencyText = "--"
+        centsText = "--"
+        centsOffset = nil
+        confidenceText = "0%"
+        self.directionText = directionText
+        statusColorName = "secondary"
+    }
+
+    private func updateWaitingStatus(for string: PipaString, mode: TuningMode) {
+        recognitionStatusText = isListening ? statusPresenter.waitingPluckText : statusPresenter.recognitionNotStartedText
+        microphoneStatusText = isListening
+            ? statusPresenter.waitingMicrophoneText(for: string, mode: mode)
+            : statusPresenter.microphoneNotStartedText
+    }
+
+    private func apply(_ result: TuningResult, for string: PipaString) {
+        let readout = readoutPresenter.readout(for: result, string: string)
+        detectedFrequencyText = readout.detectedFrequencyText
+        centsText = readout.centsText
+        centsOffset = readout.centsOffset
+        confidenceText = readout.confidenceText
+        directionText = readout.directionText
+        statusColorName = readout.statusColorName
+        diagnosticsReporter.recordReadoutResult(result, in: &diagnostics)
+        refreshDiagnostics()
     }
 
     private func updateTargetLabels() {
-        updateTargetLabels(for: selectedString)
+        updateTargetLabels(for: activeString)
     }
 
     private func updateTargetLabels(for string: PipaString) {
         targetFrequencyText = string.targetDisplayText
+        diagnosticsReporter.updateTarget(string, in: &diagnostics)
     }
 
-    private func colorName(for direction: TuningDirection) -> String {
-        switch direction {
-        case .flat:
-            return "orange"
-        case .sharp:
-            return "blue"
-        case .inTune:
-            return "green"
-        case .silent:
-            return "secondary"
+    private func refreshDiagnostics() {
+        diagnosticsReporter.refresh(
+            TunerDiagnosticsRefreshContext(
+                activeString: activeString,
+                tuningMode: tuningMode,
+                autoDetectedString: currentAutoDetectedString,
+                isListening: isListening,
+                recognitionStatusText: recognitionStatusText,
+                microphoneStatusText: microphoneStatusText,
+                activeFrameCount: session.activeFrameCount,
+                acceptedDetectionCount: session.acceptedDetectionCount
+            ),
+            in: &diagnostics
+        )
+        autoStatusText = statusPresenter.autoStatusText(
+            mode: tuningMode,
+            autoDetectedString: currentAutoDetectedString,
+            selectedString: selectedString
+        )
+    }
+
+    private func handleTuningModeChanged(_ mode: TuningMode) {
+        session.resetForModeChange()
+        configureRecorderTarget()
+        diagnosticsReporter.clearAutoState(in: &diagnostics)
+        syncActiveString(with: selectedString)
+        directionText = statusPresenter.listeningPrompt(for: activeString, mode: mode)
+        updateWaitingStatus(for: selectedString, mode: mode)
+        refreshDiagnostics()
+    }
+
+    private func configureRecorderTarget() {
+        audioController.updateTargetFrequency(recorderTargetFrequency)
+    }
+
+    private var recorderTargetFrequency: Double? {
+        tuningMode == .manual ? selectedString.targetFrequency : nil
+    }
+
+    private var effectiveTargetString: PipaString {
+        session.effectiveTargetString(fallback: activeString)
+    }
+
+    private var currentAutoDetectedString: PipaString? {
+        session.capturedPluckString ?? session.lastAutoDetectedString
+    }
+
+    private func resolveTargetString(for rawDetection: PitchDetectionResult) -> PipaString? {
+        let selection = autoTargetSelector.selectTarget(
+            for: rawDetection,
+            mode: tuningMode,
+            selectedString: selectedString,
+            activeString: activeString,
+            session: session
+        )
+
+        diagnosticsReporter.applyAutoTargetSelection(
+            selection,
+            rawDetection: rawDetection,
+            tuningMode: tuningMode,
+            in: &diagnostics
+        )
+        if let activeString = selection.activeString {
+            syncActiveString(with: activeString)
         }
-    }
-}
-
-struct AudioAnalysisFrame {
-    let detection: PitchDetectionResult?
-    let activityLevel: Double
-}
-
-private final class AudioRecorder {
-    var onAudioFrame: ((AudioAnalysisFrame) -> Void)?
-
-    private let engine = AVAudioEngine()
-    private let detector = PitchDetectionEngine()
-    private var isRunning = false
-
-    func requestRecordPermission(_ completion: @escaping (Bool) -> Void) {
-        AVAudioSession.sharedInstance().requestRecordPermission(completion)
+        return selection.targetString
     }
 
-    func start() throws {
-        guard !isRunning else {
+    private func publishLockedDetection(
+        _ detection: PitchDetectionResult,
+        for string: PipaString,
+        eventLabel: String,
+        microphoneStatus: String,
+        recognitionStatus: String,
+        result: TuningResult? = nil
+    ) {
+        let resolvedResult = result ?? TuningGuide.evaluate(
+            detectedFrequency: detection.frequency,
+            targetFrequency: string.targetFrequency,
+            confidence: detection.confidence
+        )
+        apply(resolvedResult, for: string)
+        microphoneStatusText = microphoneStatus
+        recognitionStatusText = recognitionStatus
+        diagnosticsReporter.recordLockedDetection(
+            detection,
+            string: string,
+            tuningMode: tuningMode,
+            autoDetectedString: currentAutoDetectedString,
+            eventLabel: eventLabel,
+            result: resolvedResult,
+            in: &diagnostics
+        )
+        refreshDiagnostics()
+    }
+
+    private func syncActiveString(with string: PipaString) {
+        guard activeString != string else {
             return
         }
 
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .mixWithOthers, .allowBluetoothHFP])
-        try session.setPreferredSampleRate(44_100)
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
-
-        let inputNode = engine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
-
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
-            guard let self else { return }
-            let activityLevel = self.activityLevel(from: buffer)
-            let detection = self.detector.detectPitch(from: buffer)
-            self.onAudioFrame?(AudioAnalysisFrame(detection: detection, activityLevel: activityLevel))
-        }
-
-        engine.prepare()
-        try engine.start()
-        isRunning = true
+        activeString = string
+        updateTargetLabels(for: string)
+        refreshDiagnostics()
     }
 
-    func stop() {
-        guard isRunning else {
-            return
-        }
-
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        isRunning = false
-    }
-
-    private func activityLevel(from buffer: AVAudioPCMBuffer) -> Double {
-        guard let channelData = buffer.floatChannelData else {
-            return 0
-        }
-
-        let frameLength = Int(buffer.frameLength)
-        let channelCount = Int(buffer.format.channelCount)
-        guard frameLength > 0, channelCount > 0 else {
-            return 0
-        }
-
-        var sumSquares = 0.0
-        for channel in 0..<channelCount {
-            for frame in 0..<frameLength {
-                let sample = Double(channelData[channel][frame])
-                sumSquares += sample * sample
-            }
-        }
-
-        let rms = sqrt(sumSquares / Double(frameLength * channelCount))
-        return min(1.0, rms / 0.08)
-    }
 }

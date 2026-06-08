@@ -12,7 +12,36 @@
 		000000000000000000000012 /* TunerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000B /* TunerViewModel.swift */; };
 		000000000000000000000013 /* TuningModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000C /* TuningModel.swift */; };
 		000000000000000000000014 /* PitchDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000D /* PitchDetectionEngine.swift */; };
+		000000000000000000000048 /* TuningSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000049 /* TuningSessionCoordinator.swift */; };
+		00000000000000000000004A /* TunerDiagnosticsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004B /* TunerDiagnosticsModels.swift */; };
+		00000000000000000000004C /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004D /* AudioRecorder.swift */; };
+		00000000000000000000005C /* TunerAudioController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000005D /* TunerAudioController.swift */; };
+		00000000000000000000004E /* AutoStringClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004F /* AutoStringClassifier.swift */; };
+		000000000000000000000058 /* AutoTargetResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000059 /* AutoTargetResolver.swift */; };
+		00000000000000000000006C /* AutoTuningTargetSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006D /* AutoTuningTargetSelector.swift */; };
+		000000000000000000000050 /* TunerDiagnosticsRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000051 /* TunerDiagnosticsRecorder.swift */; };
+		00000000000000000000006E /* TunerDiagnosticsReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006F /* TunerDiagnosticsReporter.swift */; };
+		000000000000000000000052 /* TunerPresentationFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000053 /* TunerPresentationFormatter.swift */; };
+		000000000000000000000054 /* TargetPitchNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000055 /* TargetPitchNormalizer.swift */; };
+		000000000000000000000056 /* TuningFrameProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000057 /* TuningFrameProcessor.swift */; };
+		00000000000000000000005A /* TuningReadoutPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000005B /* TuningReadoutPresenter.swift */; };
+		00000000000000000000006A /* TunerStatusPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006B /* TunerStatusPresenter.swift */; };
+		00000000000000000000003E /* TunerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003F /* TunerConfiguration.swift */; };
+		000000000000000000000032 /* TunerTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000033 /* TunerTheme.swift */; };
+		000000000000000000000034 /* TunerSharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000035 /* TunerSharedComponents.swift */; };
+		000000000000000000000036 /* TunerCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000037 /* TunerCards.swift */; };
+		000000000000000000000038 /* TunerStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000039 /* TunerStage.swift */; };
+		00000000000000000000003A /* CompactDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003B /* CompactDashboard.swift */; };
+		000000000000000000000040 /* TunerActionComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000041 /* TunerActionComponents.swift */; };
+		000000000000000000000042 /* TunerDiagnosticsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000043 /* TunerDiagnosticsViews.swift */; };
+		000000000000000000000044 /* CompactPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000045 /* CompactPanels.swift */; };
+		000000000000000000000046 /* CompactDeviationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000047 /* CompactDeviationPanel.swift */; };
 		000000000000000000000020 /* PipaTunerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000021 /* PipaTunerTests.swift */; };
+		000000000000000000000060 /* PipaTunerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000061 /* PipaTunerModelTests.swift */; };
+		000000000000000000000062 /* TunerViewModelManualTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000063 /* TunerViewModelManualTests.swift */; };
+		000000000000000000000064 /* TunerViewModelAutoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000065 /* TunerViewModelAutoTests.swift */; };
+		000000000000000000000066 /* TunerDiagnosticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000067 /* TunerDiagnosticsTests.swift */; };
+		000000000000000000000068 /* TunerAlgorithmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000069 /* TunerAlgorithmTests.swift */; };
 		A10000000000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -32,9 +61,38 @@
 		00000000000000000000000B /* TunerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerViewModel.swift; sourceTree = "<group>"; };
 		00000000000000000000000C /* TuningModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TuningModel.swift; sourceTree = "<group>"; };
 		00000000000000000000000D /* PitchDetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchDetectionEngine.swift; sourceTree = "<group>"; };
+		000000000000000000000049 /* TuningSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TuningSessionCoordinator.swift; sourceTree = "<group>"; };
+		00000000000000000000004B /* TunerDiagnosticsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerDiagnosticsModels.swift; sourceTree = "<group>"; };
+		00000000000000000000004D /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
+		00000000000000000000005D /* TunerAudioController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerAudioController.swift; sourceTree = "<group>"; };
+		00000000000000000000004F /* AutoStringClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoStringClassifier.swift; sourceTree = "<group>"; };
+		000000000000000000000059 /* AutoTargetResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoTargetResolver.swift; sourceTree = "<group>"; };
+		00000000000000000000006D /* AutoTuningTargetSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoTuningTargetSelector.swift; sourceTree = "<group>"; };
+		000000000000000000000051 /* TunerDiagnosticsRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerDiagnosticsRecorder.swift; sourceTree = "<group>"; };
+		00000000000000000000006F /* TunerDiagnosticsReporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerDiagnosticsReporter.swift; sourceTree = "<group>"; };
+		000000000000000000000053 /* TunerPresentationFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerPresentationFormatter.swift; sourceTree = "<group>"; };
+		000000000000000000000055 /* TargetPitchNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetPitchNormalizer.swift; sourceTree = "<group>"; };
+		000000000000000000000057 /* TuningFrameProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TuningFrameProcessor.swift; sourceTree = "<group>"; };
+		00000000000000000000005B /* TuningReadoutPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TuningReadoutPresenter.swift; sourceTree = "<group>"; };
+		00000000000000000000006B /* TunerStatusPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerStatusPresenter.swift; sourceTree = "<group>"; };
+		00000000000000000000003F /* TunerConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerConfiguration.swift; sourceTree = "<group>"; };
+		000000000000000000000033 /* TunerTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerTheme.swift; sourceTree = "<group>"; };
+		000000000000000000000035 /* TunerSharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerSharedComponents.swift; sourceTree = "<group>"; };
+		000000000000000000000037 /* TunerCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerCards.swift; sourceTree = "<group>"; };
+		000000000000000000000039 /* TunerStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerStage.swift; sourceTree = "<group>"; };
+		00000000000000000000003B /* CompactDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactDashboard.swift; sourceTree = "<group>"; };
+		000000000000000000000041 /* TunerActionComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerActionComponents.swift; sourceTree = "<group>"; };
+		000000000000000000000043 /* TunerDiagnosticsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerDiagnosticsViews.swift; sourceTree = "<group>"; };
+		000000000000000000000045 /* CompactPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactPanels.swift; sourceTree = "<group>"; };
+		000000000000000000000047 /* CompactDeviationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactDeviationPanel.swift; sourceTree = "<group>"; };
 		00000000000000000000000E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00000000000000000000000F /* PipaTuner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = PipaTuner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000000000021 /* PipaTunerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipaTunerTests.swift; sourceTree = "<group>"; };
+		000000000000000000000061 /* PipaTunerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipaTunerModelTests.swift; sourceTree = "<group>"; };
+		000000000000000000000063 /* TunerViewModelManualTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerViewModelManualTests.swift; sourceTree = "<group>"; };
+		000000000000000000000065 /* TunerViewModelAutoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerViewModelAutoTests.swift; sourceTree = "<group>"; };
+		000000000000000000000067 /* TunerDiagnosticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerDiagnosticsTests.swift; sourceTree = "<group>"; };
+		000000000000000000000069 /* TunerAlgorithmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerAlgorithmTests.swift; sourceTree = "<group>"; };
 		8950859E2FD40BDC00B34C50 /* PipaTunerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PipaTunerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -109,6 +167,8 @@
 			isa = PBXGroup;
 			children = (
 				00000000000000000000000C /* TuningModel.swift */,
+				00000000000000000000004B /* TunerDiagnosticsModels.swift */,
+				00000000000000000000003F /* TunerConfiguration.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -117,6 +177,19 @@
 			isa = PBXGroup;
 			children = (
 				00000000000000000000000D /* PitchDetectionEngine.swift */,
+				00000000000000000000004D /* AudioRecorder.swift */,
+				00000000000000000000005D /* TunerAudioController.swift */,
+				00000000000000000000004F /* AutoStringClassifier.swift */,
+				000000000000000000000059 /* AutoTargetResolver.swift */,
+				00000000000000000000006D /* AutoTuningTargetSelector.swift */,
+				000000000000000000000051 /* TunerDiagnosticsRecorder.swift */,
+				00000000000000000000006F /* TunerDiagnosticsReporter.swift */,
+				000000000000000000000053 /* TunerPresentationFormatter.swift */,
+				000000000000000000000055 /* TargetPitchNormalizer.swift */,
+				000000000000000000000057 /* TuningFrameProcessor.swift */,
+				00000000000000000000005B /* TuningReadoutPresenter.swift */,
+				00000000000000000000006B /* TunerStatusPresenter.swift */,
+				000000000000000000000049 /* TuningSessionCoordinator.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -125,14 +198,44 @@
 			isa = PBXGroup;
 			children = (
 				00000000000000000000000A /* ContentView.swift */,
+				000000000000000000000033 /* TunerTheme.swift */,
+				00000000000000000000003C /* Components */,
+				00000000000000000000003D /* Compact */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		00000000000000000000003C /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000035 /* TunerSharedComponents.swift */,
+				000000000000000000000037 /* TunerCards.swift */,
+				000000000000000000000039 /* TunerStage.swift */,
+				000000000000000000000041 /* TunerActionComponents.swift */,
+				000000000000000000000043 /* TunerDiagnosticsViews.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		00000000000000000000003D /* Compact */ = {
+			isa = PBXGroup;
+			children = (
+				00000000000000000000003B /* CompactDashboard.swift */,
+				000000000000000000000045 /* CompactPanels.swift */,
+				000000000000000000000047 /* CompactDeviationPanel.swift */,
+			);
+			path = Compact;
 			sourceTree = "<group>";
 		};
 		000000000000000000000023 /* PipaTunerTests */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000021 /* PipaTunerTests.swift */,
+				000000000000000000000061 /* PipaTunerModelTests.swift */,
+				000000000000000000000063 /* TunerViewModelManualTests.swift */,
+				000000000000000000000065 /* TunerViewModelAutoTests.swift */,
+				000000000000000000000067 /* TunerDiagnosticsTests.swift */,
+				000000000000000000000069 /* TunerAlgorithmTests.swift */,
 			);
 			path = PipaTunerTests;
 			sourceTree = "<group>";
@@ -235,7 +338,31 @@
 				000000000000000000000011 /* ContentView.swift in Sources */,
 				000000000000000000000012 /* TunerViewModel.swift in Sources */,
 				000000000000000000000013 /* TuningModel.swift in Sources */,
+				00000000000000000000004A /* TunerDiagnosticsModels.swift in Sources */,
 				000000000000000000000014 /* PitchDetectionEngine.swift in Sources */,
+				00000000000000000000004C /* AudioRecorder.swift in Sources */,
+				00000000000000000000005C /* TunerAudioController.swift in Sources */,
+				00000000000000000000004E /* AutoStringClassifier.swift in Sources */,
+				000000000000000000000058 /* AutoTargetResolver.swift in Sources */,
+				00000000000000000000006C /* AutoTuningTargetSelector.swift in Sources */,
+				000000000000000000000050 /* TunerDiagnosticsRecorder.swift in Sources */,
+				00000000000000000000006E /* TunerDiagnosticsReporter.swift in Sources */,
+				000000000000000000000052 /* TunerPresentationFormatter.swift in Sources */,
+				000000000000000000000054 /* TargetPitchNormalizer.swift in Sources */,
+				000000000000000000000056 /* TuningFrameProcessor.swift in Sources */,
+				00000000000000000000005A /* TuningReadoutPresenter.swift in Sources */,
+				00000000000000000000006A /* TunerStatusPresenter.swift in Sources */,
+				000000000000000000000048 /* TuningSessionCoordinator.swift in Sources */,
+				00000000000000000000003E /* TunerConfiguration.swift in Sources */,
+				000000000000000000000032 /* TunerTheme.swift in Sources */,
+				000000000000000000000034 /* TunerSharedComponents.swift in Sources */,
+				000000000000000000000036 /* TunerCards.swift in Sources */,
+				000000000000000000000038 /* TunerStage.swift in Sources */,
+				000000000000000000000040 /* TunerActionComponents.swift in Sources */,
+				000000000000000000000042 /* TunerDiagnosticsViews.swift in Sources */,
+				00000000000000000000003A /* CompactDashboard.swift in Sources */,
+				000000000000000000000044 /* CompactPanels.swift in Sources */,
+				000000000000000000000046 /* CompactDeviationPanel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,6 +371,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				000000000000000000000020 /* PipaTunerTests.swift in Sources */,
+				000000000000000000000060 /* PipaTunerModelTests.swift in Sources */,
+				000000000000000000000062 /* TunerViewModelManualTests.swift in Sources */,
+				000000000000000000000064 /* TunerViewModelAutoTests.swift in Sources */,
+				000000000000000000000066 /* TunerDiagnosticsTests.swift in Sources */,
+				000000000000000000000068 /* TunerAlgorithmTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,6 +438,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.jclp3827.jiaoao;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG TUNER_DEVELOPMENT";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -327,6 +460,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.jclp3827.jiaoao;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
