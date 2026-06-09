@@ -72,7 +72,7 @@ extension PipaTunerTests {
         let readout = presenter.readout(for: result, string: .fourth)
 
         XCTAssertEqual(readout.detectedFrequencyText, "80.0 Hz")
-        XCTAssertEqual(readout.directionText, "明显偏低，继续上紧")
+        XCTAssertEqual(readout.directionText, "明显偏低，先拧紧")
         XCTAssertEqual(readout.statusColorName, "orange")
     }
 
@@ -86,6 +86,6 @@ extension PipaTunerTests {
 
         let readout = presenter.readout(for: result, string: .fourth)
 
-        XCTAssertEqual(readout.directionText, "偏低，往上拧一点")
+        XCTAssertEqual(readout.directionText, "偏低，继续拧紧")
     }
 }

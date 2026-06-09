@@ -68,38 +68,79 @@ struct StringOptionButton: View {
 
 struct ReadoutCard: View {
     @ObservedObject var viewModel: TunerViewModel
+    let statusColor: Color
 
     var body: some View {
         TunerCard {
-            VStack(alignment: .center, spacing: 14) {
-                SectionTitle(title: "实时结果", subtitle: viewModel.directionText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .center, spacing: 10) {
+                    Text("实时结果")
+                        .font(.system(size: 22, weight: .bold, design: .serif))
+                        .foregroundStyle(TunerTheme.text)
 
-                if viewModel.tuningMode == .auto {
-                    AutoDetectionPill(title: "自动判弦", value: viewModel.autoStatusText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Spacer(minLength: 0)
+
+                    if viewModel.tuningMode == .auto {
+                        AutoDetectionPill(title: "自动", value: viewModel.autoStatusText)
+                    }
                 }
 
-                ZStack {
-                    Circle()
-                        .stroke(TunerTheme.copper.opacity(0.14), lineWidth: 1)
-                        .frame(width: 130, height: 130)
-                    Circle()
-                        .stroke(TunerTheme.copper.opacity(0.10), lineWidth: 1)
-                        .frame(width: 96, height: 96)
+                VStack(spacing: 10) {
+                    Text(viewModel.detectedFrequencyText)
+                        .font(.system(size: 44, weight: .black, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(primaryReadoutColor)
+                        .tunerSingleLine()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
 
-                    VStack(spacing: 4) {
-                        Text(viewModel.activeString.displayPitchName)
-                            .tunerMetricText(size: 58, weight: .black, design: .serif, tone: .gold)
-                        Text(viewModel.detectedFrequencyText)
-                            .tunerMetricText(size: 24, weight: .bold)
-                        Text(viewModel.activeString.jianpuLabel)
-                            .font(.footnote)
-                            .tunerTextTone(.muted)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("目标")
+                                .font(.caption2.weight(.bold))
+                                .tunerTextTone(.muted)
+                                .frame(minWidth: 32, alignment: .leading)
+                            Text(viewModel.activeString.frequencyLabel)
+                                .tunerMetricText(size: 18, weight: .bold)
+                                .monospacedDigit()
+                                .tunerSingleLine()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(viewModel.activeString.displayPitchName)
+                                .tunerMetricText(size: 34, weight: .black, design: .serif, tone: .gold)
+                                .frame(minWidth: 32, alignment: .leading)
+                            Text(viewModel.activeString.jianpuLabel)
+                                .font(.caption2)
+                                .tunerTextTone(.muted)
+                                .tunerSingleLine()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 11)
+                    .frame(minHeight: 78)
+                    .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(referenceBorderColor, lineWidth: 1)
+                    )
                 }
             }
         }
+    }
+
+    private var hasDetectedFrequency: Bool {
+        viewModel.detectedFrequencyText != "--"
+    }
+
+    private var primaryReadoutColor: Color {
+        hasDetectedFrequency ? statusColor : TunerTheme.muted
+    }
+
+    private var referenceBorderColor: Color {
+        hasDetectedFrequency ? statusColor.opacity(0.30) : TunerTheme.border.opacity(0.80)
     }
 }
 
@@ -126,26 +167,39 @@ struct TargetPitchCard: View {
 
 struct ConfidenceCard: View {
     let confidenceText: String
+    let statusColor: Color
+    let isActive: Bool
 
     var body: some View {
         TunerCard {
             VStack(alignment: .center, spacing: 12) {
-                SectionTitle(title: "偏差", subtitle: "本次识别置信度")
+                SectionTitle(title: "稳定度", subtitle: "本次识别质量")
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(confidenceText)
                     .font(.system(size: 38, weight: .black, design: .rounded))
-                    .foregroundStyle(Color(red: 0.35, green: 0.88, blue: 0.47))
+                    .monospacedDigit()
+                    .foregroundStyle(tint)
 
                 HStack(spacing: 6) {
-                    ForEach(0..<6, id: \.self) { _ in
+                    ForEach(0..<6, id: \.self) { index in
                         Capsule()
-                            .fill(Color(red: 0.35, green: 0.88, blue: 0.47))
+                            .fill(index < activeSegments ? tint : TunerTheme.muted.opacity(0.22))
                             .frame(height: 7)
                     }
                 }
             }
         }
+    }
+
+    private var activeSegments: Int {
+        let digits = confidenceText.filter(\.isNumber)
+        let value = Int(digits) ?? 0
+        return max(0, min(6, Int((Double(value) / 100.0 * 6.0).rounded(.up))))
+    }
+
+    private var tint: Color {
+        isActive ? statusColor : TunerTheme.muted
     }
 }
 
@@ -162,18 +216,21 @@ struct DeviationMeterCard: View {
                 GeometryReader { proxy in
                     let height = proxy.size.height
                     let centerX = proxy.size.width * 0.38
+                    let trackHeight = height * 0.84
+                    let trackTop = (height - trackHeight) / 2
+                    let trackBottom = trackTop + trackHeight
                     let normalized = meterPosition(from: centsOffset)
                     let clamped = max(0.0, min(1.0, normalized))
-                    let indicatorY = height * (1.0 - clamped)
+                    let indicatorY = trackBottom - (trackHeight * clamped)
 
                     ZStack {
                         Capsule()
                             .fill(Color.black.opacity(0.28))
-                            .frame(width: 12, height: height * 0.86)
+                            .frame(width: 12, height: trackHeight)
                             .position(x: centerX, y: height / 2)
 
-                        ForEach(0..<11, id: \.self) { index in
-                            let y = height * CGFloat(index) / 10.0
+                        ForEach(1..<10, id: \.self) { index in
+                            let y = trackTop + trackHeight * CGFloat(index) / 10.0
                             Rectangle()
                                 .fill(index == 5 ? TunerTheme.gold.opacity(0.9) : TunerTheme.muted.opacity(0.34))
                                 .frame(width: index == 5 ? 64 : 38, height: index == 5 ? 2.5 : 1)

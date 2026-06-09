@@ -56,7 +56,7 @@ extension PipaTunerTests {
         XCTAssertEqual(viewModel.centsText, centsText)
         XCTAssertEqual(viewModel.confidenceText, confidenceText)
         XCTAssertEqual(viewModel.directionText, directionText)
-        XCTAssertEqual(viewModel.microphoneStatusText, "等待下一次拨弦")
+        XCTAssertEqual(viewModel.microphoneStatusText, "正在监听")
     }
 
     @MainActor
@@ -66,7 +66,7 @@ extension PipaTunerTests {
         sendDetectedFrame(frequency: 331.0, confidence: 0.88, rms: 0.15, activity: 0.6, to: viewModel)
 
         XCTAssertEqual(viewModel.inputActivityLevel, 0.6, accuracy: 0.001)
-        XCTAssertEqual(viewModel.recognitionStatusText, "正在识别，松手后锁定")
+        XCTAssertEqual(viewModel.recognitionStatusText, "保持片刻，等待稳定")
         XCTAssertEqual(viewModel.targetFrequencyText, PipaString.second.targetDisplayText)
     }
 
@@ -80,14 +80,14 @@ extension PipaTunerTests {
         sendDetectedFrame(frequency: 440.0, confidence: 0.99, rms: 0.14, activity: 0.5, to: viewModel)
 
         XCTAssertEqual(viewModel.detectedFrequencyText, "440.0 Hz")
-        XCTAssertEqual(viewModel.recognitionStatusText, "正在识别，松手后锁定")
+        XCTAssertEqual(viewModel.recognitionStatusText, "保持片刻，等待稳定")
 
         finishPluck(on: viewModel)
 
         XCTAssertEqual(viewModel.detectedFrequencyText, "440.0 Hz")
         XCTAssertEqual(viewModel.confidenceText, "90%")
-        XCTAssertEqual(viewModel.microphoneStatusText, "已锁定本次结果")
-        XCTAssertEqual(viewModel.recognitionStatusText, "已锁定结果，等待下一次拨弦")
+        XCTAssertEqual(viewModel.microphoneStatusText, "正在监听")
+        XCTAssertEqual(viewModel.recognitionStatusText, "已锁定")
     }
 
     @MainActor
@@ -103,7 +103,7 @@ extension PipaTunerTests {
         XCTAssertEqual(viewModel.detectedFrequencyText, "--")
         XCTAssertNil(viewModel.diagnostics.acceptedFrequency)
         XCTAssertNil(viewModel.diagnostics.lockedFrequency)
-        XCTAssertEqual(viewModel.microphoneStatusText, "请靠近麦克风重拨所选弦")
+        XCTAssertEqual(viewModel.microphoneStatusText, "拨弦稍轻")
     }
 
     @MainActor
@@ -119,7 +119,7 @@ extension PipaTunerTests {
         assertManualLock(
             on: viewModel,
             frequencyText: "401.0 Hz",
-            directionText: "偏高，往下松一点",
+            directionText: "偏高，稍微放松",
             centsSign: .plus
         )
     }
@@ -137,10 +137,10 @@ extension PipaTunerTests {
         assertManualLock(
             on: viewModel,
             frequencyText: "231.0 Hz",
-            directionText: "偏高，往下松一点",
+            directionText: "偏高，稍微放松",
             centsSign: .plus
         )
-        XCTAssertEqual(viewModel.microphoneStatusText, "已锁定本次结果")
+        XCTAssertEqual(viewModel.microphoneStatusText, "正在监听")
     }
 
     @MainActor
@@ -156,7 +156,7 @@ extension PipaTunerTests {
         assertManualLock(
             on: viewModel,
             frequencyText: "180.5 Hz",
-            directionText: "偏高，往下松一点",
+            directionText: "偏高，稍微放松",
             centsSign: .plus
         )
     }
@@ -201,7 +201,7 @@ extension PipaTunerTests {
         XCTAssertEqual(viewModel.diagnostics.acceptedFrequency ?? 0, 65.0, accuracy: 0.1)
         XCTAssertEqual(viewModel.diagnostics.lockedFrequency ?? 0, 65.0, accuracy: 0.1)
         XCTAssertLessThan(viewModel.centsOffset ?? 0, 0)
-        XCTAssertEqual(viewModel.directionText, "明显偏低，继续上紧")
+        XCTAssertEqual(viewModel.directionText, "明显偏低，先拧紧")
     }
 
     @MainActor
@@ -216,7 +216,7 @@ extension PipaTunerTests {
         XCTAssertEqual(viewModel.diagnostics.acceptedFrequency ?? 0, 135.0, accuracy: 0.1)
         XCTAssertEqual(viewModel.diagnostics.lockedFrequency ?? 0, 135.0, accuracy: 0.1)
         XCTAssertLessThan(viewModel.centsOffset ?? 0, 0)
-        XCTAssertEqual(viewModel.directionText, "明显偏低，继续上紧")
+        XCTAssertEqual(viewModel.directionText, "明显偏低，先拧紧")
     }
 
     @MainActor
@@ -264,7 +264,7 @@ extension PipaTunerTests {
         assertManualLock(
             on: viewModel,
             frequencyText: "80.5 Hz",
-            directionText: "明显偏低，继续上紧",
+            directionText: "明显偏低，先拧紧",
             centsSign: .minus
         )
     }
@@ -279,7 +279,7 @@ extension PipaTunerTests {
         finishPluck(on: viewModel)
 
         XCTAssertEqual(viewModel.inputActivityLevel, 0, accuracy: 0.001)
-        XCTAssertEqual(viewModel.recognitionStatusText, "等待下一次拨弦")
+        XCTAssertEqual(viewModel.recognitionStatusText, "拨弦后显示结果")
         XCTAssertEqual(viewModel.detectedFrequencyText, detectedFrequencyText)
     }
 }

@@ -10,14 +10,14 @@ final class TunerViewModel: ObservableObject {
     @Published var detectedFrequencyText: String = "--"
     @Published var targetFrequencyText: String = PipaString.first.targetDisplayText
     @Published var centsText: String = "--"
-    @Published var directionText: String = "点击开始，准备拾音"
+    @Published var directionText: String = "点击开始，准备调弦"
     @Published var confidenceText: String = "0%"
     @Published var statusColorName: String = "secondary"
     @Published var isListening: Bool = false
     @Published var microphoneStatusText: String = "麦克风尚未启动"
     @Published var centsOffset: Double?
     @Published var inputActivityLevel: Double = 0
-    @Published var recognitionStatusText: String = "未开始"
+    @Published var recognitionStatusText: String = "准备调弦"
     @Published var showsDiagnostics: Bool = false
     @Published private(set) var diagnostics = TunerDiagnostics()
     @Published private(set) var autoStatusText: String = "等待判弦"
@@ -33,6 +33,8 @@ final class TunerViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private var lastDetectedFrequency: Double?
     private var lastConfidence: Double = 0
+    private var audioStartRequestID = UUID()
+    private var audioStartTimeoutTask: Task<Void, Never>?
 
     init() {
         audioController.onAudioFrame = { [weak self] frame in
@@ -65,21 +67,35 @@ final class TunerViewModel: ObservableObject {
         }
 
         isStartingAudio = true
+        let requestID = UUID()
+        audioStartRequestID = requestID
         microphoneStatusText = statusPresenter.requestingPermissionText
+        recognitionStatusText = statusPresenter.startingRecognitionText
+        directionText = statusPresenter.startingMicrophoneText
+        statusColorName = "secondary"
+        scheduleAudioStartTimeout(for: requestID)
 
         audioController.start(
             targetFrequency: recorderTargetFrequency,
             onPermissionGranted: { [weak self] in
                 guard let self else { return }
+                guard audioStartRequestID == requestID, isStartingAudio else { return }
                 microphoneStatusText = statusPresenter.startingMicrophoneText
             },
             completion: { [weak self] result in
-                self?.handleAudioStartResult(result)
+                self?.handleAudioStartResult(result, requestID: requestID)
             }
         )
     }
 
-    private func handleAudioStartResult(_ result: TunerAudioStartResult) {
+    private func handleAudioStartResult(_ result: TunerAudioStartResult, requestID: UUID) {
+        guard audioStartRequestID == requestID, isStartingAudio else {
+            audioController.stop()
+            return
+        }
+
+        audioStartTimeoutTask?.cancel()
+        audioStartTimeoutTask = nil
         isStartingAudio = false
 
         switch result {
@@ -93,24 +109,33 @@ final class TunerViewModel: ObservableObject {
         case .permissionDenied:
             isListening = false
             microphoneStatusText = statusPresenter.permissionDeniedText
+            recognitionStatusText = statusPresenter.unableToStartTuningText
             directionText = statusPresenter.permissionDirectionText
             statusColorName = "red"
 
         case .failed:
             isListening = false
             microphoneStatusText = statusPresenter.startFailedText
+            recognitionStatusText = statusPresenter.unableToStartTuningText
             directionText = statusPresenter.startFailedDirectionText
             statusColorName = "red"
         }
     }
 
     func stopListening() {
-        guard isListening, !isStartingAudio else {
+        guard isListening else {
             return
         }
 
-        publishLockedCurrentPluckIfNeeded()
+        audioStartRequestID = UUID()
+        audioStartTimeoutTask?.cancel()
+        audioStartTimeoutTask = nil
+
+        if isListening {
+            publishLockedCurrentPluckIfNeeded()
+        }
         audioController.stop()
+        isStartingAudio = false
         isListening = false
         microphoneStatusText = statusPresenter.microphoneStoppedText
         recognitionStatusText = statusPresenter.recognitionStoppedText
@@ -129,6 +154,35 @@ final class TunerViewModel: ObservableObject {
         } else {
             startListening()
         }
+    }
+
+    private func scheduleAudioStartTimeout(for requestID: UUID) {
+        audioStartTimeoutTask?.cancel()
+        audioStartTimeoutTask = Task { [weak self] in
+            let nanoseconds = UInt64(TunerConfiguration.AudioInput.startupTimeoutSeconds * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: nanoseconds)
+            guard !Task.isCancelled else { return }
+            self?.handleAudioStartTimeout(requestID: requestID)
+        }
+    }
+
+    private func handleAudioStartTimeout(requestID: UUID) {
+        guard audioStartRequestID == requestID, isStartingAudio else {
+            return
+        }
+
+        audioStartRequestID = UUID()
+        audioStartTimeoutTask?.cancel()
+        audioStartTimeoutTask = nil
+        audioController.stop()
+        isStartingAudio = false
+        isListening = false
+        inputActivityLevel = 0
+        microphoneStatusText = statusPresenter.startTimeoutText
+        recognitionStatusText = statusPresenter.retryStartTuningText
+        directionText = statusPresenter.startTimeoutDirectionText
+        statusColorName = "red"
+        refreshDiagnostics()
     }
 
     func toggleDiagnostics() {
@@ -208,7 +262,8 @@ final class TunerViewModel: ObservableObject {
             handleAssistedOnlyFrame(frame, assistedDetection: assistedDetection)
         } else {
             diagnosticsReporter.recordAnalysisReason(frame.rawAnalysisReason, in: &diagnostics)
-            microphoneStatusText = statusPresenter.findingStablePitchText
+            recognitionStatusText = statusPresenter.findingStablePitchText
+            microphoneStatusText = statusPresenter.microphoneListeningText
         }
         refreshDiagnostics()
     }
@@ -228,7 +283,7 @@ final class TunerViewModel: ObservableObject {
         }
 
         if lastDetectedFrequency != nil {
-            microphoneStatusText = statusPresenter.waitingNextPluckText
+            microphoneStatusText = statusPresenter.microphoneListeningText
         } else {
             directionText = statusPresenter.lightPluckText
             statusColorName = "secondary"
@@ -238,6 +293,7 @@ final class TunerViewModel: ObservableObject {
 
     private func beginActiveAudioFrame(_ frame: AudioAnalysisFrame) {
         recognitionStatusText = statusPresenter.activeRecognizingText
+        statusColorName = "gold"
         diagnosticsReporter.updateActivity(
             level: frame.activityLevel,
             activeFrameCount: session.activeFrameCount,
@@ -284,7 +340,8 @@ final class TunerViewModel: ObservableObject {
 
     private func markFrameAnalyzing() {
         recognitionStatusText = statusPresenter.recognizingUntilReleaseText
-        microphoneStatusText = statusPresenter.analyzingPluckText
+        microphoneStatusText = statusPresenter.microphoneListeningText
+        statusColorName = "gold"
     }
 
     private func collectDetection(_ detection: PitchDetectionResult, for string: PipaString) {
@@ -302,7 +359,9 @@ final class TunerViewModel: ObservableObject {
         diagnosticsReporter.recordRejectedDetection(reason, in: &diagnostics)
         switch reason {
         case .manualHighHarmonic:
-            microphoneStatusText = statusPresenter.highHarmonicText
+            recognitionStatusText = statusPresenter.highHarmonicText
+            microphoneStatusText = statusPresenter.microphoneListeningText
+            statusColorName = "orange"
         case .lowConfidence, .outsideTargetRange:
             break
         }

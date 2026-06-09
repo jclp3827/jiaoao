@@ -15,16 +15,20 @@ struct TuningReadoutPresenter {
     }
 
     private func directionText(for result: TuningResult, string: PipaString) -> String {
-        guard result.direction == .flat else {
-            return result.directionText
+        switch result.direction {
+        case .flat:
+            let ratio = result.detectedFrequency / string.targetFrequency
+            guard ratio >= 0.82 else {
+                return "明显偏低，先拧紧"
+            }
+            return "偏低，继续拧紧"
+        case .sharp:
+            return "偏高，稍微放松"
+        case .inTune:
+            return "已准"
+        case .silent:
+            return "等待拨弦"
         }
-
-        let ratio = result.detectedFrequency / string.targetFrequency
-        guard ratio < 0.82 else {
-            return result.directionText
-        }
-
-        return "明显偏低，继续上紧"
     }
 }
 

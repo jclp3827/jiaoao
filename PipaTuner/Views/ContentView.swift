@@ -24,9 +24,9 @@ struct ContentView: View {
                         DiagnosticsCard(diagnostics: viewModel.diagnostics)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 122)
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 108)
             }
             .scrollIndicators(.hidden)
 
@@ -40,8 +40,8 @@ struct ContentView: View {
                             action: viewModel.toggleDiagnostics
                         )
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 102)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 94)
                 }
             }
         }
@@ -49,6 +49,7 @@ struct ContentView: View {
             TunerActionBar(
                 isListening: viewModel.isListening,
                 isStarting: viewModel.isStartingAudio,
+                resultStatusText: primaryStatusText,
                 microphoneStatusText: viewModel.microphoneStatusText,
                 activityLevel: viewModel.inputActivityLevel,
                 tint: statusColor,
@@ -63,6 +64,13 @@ struct ContentView: View {
 
     private var statusColor: Color {
         TunerTheme.color(from: viewModel.statusColorName)
+    }
+
+    private var primaryStatusText: String {
+        if viewModel.isStartingAudio {
+            return viewModel.recognitionStatusText
+        }
+        return viewModel.detectedFrequencyText == "--" ? viewModel.recognitionStatusText : viewModel.directionText
     }
 }
 
@@ -91,9 +99,12 @@ struct TunerDashboard: View {
                 .frame(maxWidth: .infinity, minHeight: 650)
 
             VStack(spacing: 18) {
-                TargetPitchCard(string: viewModel.activeString)
-                ReadoutCard(viewModel: viewModel)
-                ConfidenceCard(confidenceText: viewModel.confidenceText)
+                ReadoutCard(viewModel: viewModel, statusColor: statusColor)
+                ConfidenceCard(
+                    confidenceText: viewModel.confidenceText,
+                    statusColor: statusColor,
+                    isActive: viewModel.detectedFrequencyText != "--"
+                )
                 AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
             }
             .frame(width: 270)

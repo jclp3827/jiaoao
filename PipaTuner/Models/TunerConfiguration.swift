@@ -19,6 +19,7 @@ extension TunerConfiguration {
     enum AudioInput {
         static let preferredSampleRate = 44_100.0
         static let tapBufferSize: AVAudioFrameCount = 8192
+        static let startupTimeoutSeconds = 6.0
         static let activeFrameLevel = 0.024
         static let activityNormalizationLevel = 0.018
         static let peakNormalizationLevel = 0.055

@@ -57,6 +57,8 @@ enum TunerTheme {
 
     static func color(from name: String) -> Color {
         switch name {
+        case "gold":
+            return gold
         case "green":
             return Color(red: 0.35, green: 0.88, blue: 0.47)
         case "orange":

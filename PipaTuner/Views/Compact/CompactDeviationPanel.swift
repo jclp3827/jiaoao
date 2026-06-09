@@ -13,8 +13,11 @@ struct HTMLDeviationPanel: View {
                 GeometryReader { proxy in
                     let height = proxy.size.height
                     let centerX = proxy.size.width * 0.38
+                    let trackHeight = height * 0.84
+                    let trackTop = (height - trackHeight) / 2
+                    let trackBottom = trackTop + trackHeight
                     let normalized = meterPosition(from: centsOffset)
-                    let indicatorY = height * (1.0 - normalized)
+                    let indicatorY = trackBottom - (trackHeight * normalized)
 
                     ZStack {
                         Capsule()
@@ -29,11 +32,11 @@ struct HTMLDeviationPanel: View {
                                     endPoint: .bottom
                                 )
                             )
-                            .frame(width: 4, height: height * 0.88)
+                            .frame(width: 4, height: trackHeight)
                             .position(x: centerX, y: height / 2)
 
-                        ForEach(0..<11, id: \.self) { index in
-                            let y = height * CGFloat(index) / 10.0
+                        ForEach(1..<10, id: \.self) { index in
+                            let y = trackTop + trackHeight * CGFloat(index) / 10.0
                             Rectangle()
                                 .fill(index == 5 ? TunerTheme.gold : TunerTheme.muted.opacity(0.42))
                                 .frame(width: index == 5 ? 34 : 18, height: 1)
