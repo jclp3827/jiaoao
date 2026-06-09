@@ -17,6 +17,7 @@ final class TunerViewModel: ObservableObject {
     @Published var microphoneStatusText: String = "麦克风尚未启动"
     @Published var centsOffset: Double?
     @Published var inputActivityLevel: Double = 0
+    @Published private(set) var stringVibrationState: StringVibrationState = .silent
     @Published var recognitionStatusText: String = "准备调弦"
     @Published var showsDiagnostics: Bool = false
     @Published private(set) var diagnostics = TunerDiagnostics()
@@ -129,6 +130,7 @@ final class TunerViewModel: ObservableObject {
         switch result {
         case .started:
             isListening = true
+            stringVibrationState = .silent
             microphoneStatusText = statusPresenter.microphoneListeningText
             recognitionStatusText = statusPresenter.waitingPluckText
             directionText = statusPresenter.listeningPrompt(for: activeString, mode: tuningMode)
@@ -137,6 +139,7 @@ final class TunerViewModel: ObservableObject {
 
         case .permissionDenied:
             isListening = false
+            stringVibrationState = .silent
             microphoneStatusText = statusPresenter.permissionDeniedText
             recognitionStatusText = statusPresenter.unableToStartTuningText
             directionText = statusPresenter.permissionDirectionText
@@ -145,6 +148,7 @@ final class TunerViewModel: ObservableObject {
 
         case .failed:
             isListening = false
+            stringVibrationState = .silent
             microphoneStatusText = statusPresenter.startFailedText
             recognitionStatusText = statusPresenter.unableToStartTuningText
             directionText = statusPresenter.startFailedDirectionText
@@ -172,6 +176,7 @@ final class TunerViewModel: ObservableObject {
         microphoneStatusText = statusPresenter.microphoneStoppedText
         recognitionStatusText = statusPresenter.recognitionStoppedText
         inputActivityLevel = 0
+        stringVibrationState = .silent
         directionText = activeString.tuningHint
         statusColorName = "secondary"
         diagnosticsReporter.recordAudioLifecycleEvent(.stopRequested, in: &diagnostics)
@@ -212,6 +217,7 @@ final class TunerViewModel: ObservableObject {
         isStartingAudio = false
         isListening = false
         inputActivityLevel = 0
+        stringVibrationState = .silent
         microphoneStatusText = statusPresenter.startTimeoutText
         recognitionStatusText = statusPresenter.retryStartTuningText
         directionText = statusPresenter.startTimeoutDirectionText
@@ -304,6 +310,7 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func handleInactiveAudioFrame(_ frame: AudioAnalysisFrame) {
+        stringVibrationState = .silent
         recognitionStatusText = statusPresenter.waitingNextPluckText
         diagnosticsReporter.updateActivity(
             level: frame.activityLevel,
@@ -327,6 +334,7 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func beginActiveAudioFrame(_ frame: AudioAnalysisFrame) {
+        stringVibrationState = .residual
         recognitionStatusText = statusPresenter.activeRecognizingText
         statusColorName = "gold"
         diagnosticsReporter.updateActivity(
@@ -404,6 +412,7 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func recordAcceptedDetection(_ accepted: TuningFrameAcceptedDetection, for string: PipaString) {
+        stringVibrationState = .active
         let acceptedDetection = accepted.detection
         session.recordAcceptedDetection(acceptedDetection)
         diagnosticsReporter.recordAcceptedDetection(

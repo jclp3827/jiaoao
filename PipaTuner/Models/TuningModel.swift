@@ -141,6 +141,12 @@ enum TuningDirection: String {
     case silent
 }
 
+enum StringVibrationState {
+    case silent
+    case residual
+    case active
+}
+
 struct TuningResult {
     let detectedFrequency: Double
     let targetFrequency: Double

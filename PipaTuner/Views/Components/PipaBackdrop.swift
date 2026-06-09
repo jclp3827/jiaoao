@@ -2,6 +2,8 @@ import SwiftUI
 
 struct PipaBackdrop: View {
     let activeString: PipaString
+    let vibrationState: StringVibrationState
+    let activityLevel: Double
 
     var body: some View {
         VStack {
@@ -12,7 +14,11 @@ struct PipaBackdrop: View {
                 .scaledToFit()
                 .frame(width: 382)
                 .overlay {
-                    PipaHighlightOverlay(string: activeString)
+                    PipaHighlightOverlay(
+                        string: activeString,
+                        vibrationState: vibrationState,
+                        activityLevel: activityLevel
+                    )
                 }
                 .scaleEffect(1.26)
                 .shadow(color: .black.opacity(0.58), radius: 20, x: 0, y: 14)
@@ -29,20 +35,30 @@ struct PipaBackdrop: View {
 
 private struct PipaHighlightOverlay: View {
     let string: PipaString
+    let vibrationState: StringVibrationState
+    let activityLevel: Double
 
     var body: some View {
-        Canvas { context, size in
-            let geometry = PipaHighlightGeometry(string: string)
-            let stringPath = path(from: geometry.stringPath, in: size)
-            let pegEdgePath = smoothPath(from: geometry.pegEdgePath, in: size)
-            let bridgePoint = point(geometry.bridgePoint, in: size)
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let geometry = PipaHighlightGeometry(string: string)
+                let stringPath = vibratingStringPath(
+                    from: geometry.stringPath,
+                    in: size,
+                    at: timeline.date
+                )
+                let pegEdgePath = smoothPath(from: geometry.pegEdgePath, in: size)
+                let bridgePoint = point(geometry.bridgePoint, in: size)
 
-            drawStringHighlight(stringPath, bridgePoint: bridgePoint, in: &context)
-            drawPegEdgeHighlight(pegEdgePath, in: &context)
+                drawStringCastShadow(stringPath, in: &context)
+                drawStringHighlight(stringPath, bridgePoint: bridgePoint, in: &context)
+                drawPegEdgeHighlight(pegEdgePath, in: &context)
+            }
         }
         .blendMode(.screen)
         .allowsHitTesting(false)
         .animation(.easeInOut(duration: 0.20), value: string)
+        .animation(.easeOut(duration: 0.12), value: activityLevel)
     }
 
     private func path(from points: [UnitPoint], in size: CGSize) -> Path {
@@ -93,6 +109,64 @@ private struct PipaHighlightOverlay: View {
         CGPoint(x: unitPoint.x * size.width, y: unitPoint.y * size.height)
     }
 
+    private func vibratingStringPath(from points: [UnitPoint], in size: CGSize, at date: Date) -> Path {
+        var path = Path()
+        guard let startUnit = points.first, let endUnit = points.last else {
+            return path
+        }
+
+        let start = point(startUnit, in: size)
+        let end = point(endUnit, in: size)
+        path.move(to: start)
+
+        let amplitude = vibrationAmplitude(in: size)
+        guard amplitude > 0.1 else {
+            path.addLine(to: end)
+            return path
+        }
+
+        let time = date.timeIntervalSinceReferenceDate
+        let basePhase = time * 2.0 * Double.pi * 9.0
+        let detailPhase = time * 2.0 * Double.pi * 13.0
+        let displacement = amplitude * (0.82 * sin(basePhase) + 0.18 * sin(detailPhase))
+
+        let pluckResponsePoint = CGPoint(
+            x: end.x + (start.x - end.x) * 0.80,
+            y: end.y + (start.y - end.y) * 0.80
+        )
+        let control = CGPoint(
+            x: pluckResponsePoint.x + displacement,
+            y: pluckResponsePoint.y
+        )
+        path.addQuadCurve(to: end, control: control)
+        return path
+    }
+
+    private func vibrationAmplitude(in size: CGSize) -> CGFloat {
+        guard vibrationState != .silent else {
+            return 0
+        }
+
+        let threshold = TunerConfiguration.AudioInput.activeFrameLevel
+        let normalizedLevel = max(0, min(1, (activityLevel - threshold) / (0.30 - threshold)))
+        guard normalizedLevel > 0 else {
+            return 0
+        }
+
+        let easedLevel = sqrt(normalizedLevel)
+        let maxAmplitude = min(2.2, size.width * 0.006)
+        switch vibrationState {
+        case .silent:
+            return 0
+        case .residual:
+            let residualFloor = maxAmplitude * 0.18
+            let residualRange = maxAmplitude * 0.16
+            return residualFloor + CGFloat(easedLevel) * residualRange
+        case .active:
+            return CGFloat(easedLevel) * maxAmplitude
+        }
+    }
+
     private func drawStringHighlight(
         _ path: Path,
         bridgePoint: CGPoint,
@@ -123,6 +197,15 @@ private struct PipaHighlightOverlay: View {
             height: 5
         )
         context.fill(Path(ellipseIn: bridgeGlow), with: .color(TunerTheme.gold.opacity(0.95)))
+    }
+
+    private func drawStringCastShadow(_ path: Path, in context: inout GraphicsContext) {
+        let shadowPath = path.applying(CGAffineTransform(translationX: 1.2, y: 1.8))
+        context.stroke(
+            shadowPath,
+            with: .color(.black.opacity(0.10)),
+            style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)
+        )
     }
 
     private func drawPegEdgeHighlight(_ path: Path, in context: inout GraphicsContext) {
