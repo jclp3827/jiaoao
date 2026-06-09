@@ -73,6 +73,8 @@ final class TunerViewModel: ObservableObject {
         recognitionStatusText = statusPresenter.startingRecognitionText
         directionText = statusPresenter.startingMicrophoneText
         statusColorName = "secondary"
+        diagnosticsReporter.recordAudioLifecycleEvent(.startRequested, in: &diagnostics)
+        refreshDiagnostics()
         scheduleAudioStartTimeout(for: requestID)
 
         audioController.start(
@@ -81,6 +83,8 @@ final class TunerViewModel: ObservableObject {
                 guard let self else { return }
                 guard audioStartRequestID == requestID, isStartingAudio else { return }
                 microphoneStatusText = statusPresenter.startingMicrophoneText
+                diagnosticsReporter.recordAudioLifecycleEvent(.permissionGranted, in: &diagnostics)
+                refreshDiagnostics()
             },
             completion: { [weak self] result in
                 self?.handleAudioStartResult(result, requestID: requestID)
@@ -105,6 +109,7 @@ final class TunerViewModel: ObservableObject {
             recognitionStatusText = statusPresenter.waitingPluckText
             directionText = statusPresenter.listeningPrompt(for: activeString, mode: tuningMode)
             statusColorName = "secondary"
+            diagnosticsReporter.recordAudioLifecycleEvent(.startSucceeded, in: &diagnostics)
 
         case .permissionDenied:
             isListening = false
@@ -112,6 +117,7 @@ final class TunerViewModel: ObservableObject {
             recognitionStatusText = statusPresenter.unableToStartTuningText
             directionText = statusPresenter.permissionDirectionText
             statusColorName = "red"
+            diagnosticsReporter.recordAudioLifecycleEvent(.permissionDenied, in: &diagnostics)
 
         case .failed:
             isListening = false
@@ -119,7 +125,9 @@ final class TunerViewModel: ObservableObject {
             recognitionStatusText = statusPresenter.unableToStartTuningText
             directionText = statusPresenter.startFailedDirectionText
             statusColorName = "red"
+            diagnosticsReporter.recordAudioLifecycleEvent(.startFailed, in: &diagnostics)
         }
+        refreshDiagnostics()
     }
 
     func stopListening() {
@@ -142,6 +150,8 @@ final class TunerViewModel: ObservableObject {
         inputActivityLevel = 0
         directionText = activeString.tuningHint
         statusColorName = "secondary"
+        diagnosticsReporter.recordAudioLifecycleEvent(.stopRequested, in: &diagnostics)
+        refreshDiagnostics()
     }
 
     func toggleListening() {
@@ -182,6 +192,7 @@ final class TunerViewModel: ObservableObject {
         recognitionStatusText = statusPresenter.retryStartTuningText
         directionText = statusPresenter.startTimeoutDirectionText
         statusColorName = "red"
+        diagnosticsReporter.recordAudioLifecycleEvent(.startTimedOut, in: &diagnostics)
         refreshDiagnostics()
     }
 

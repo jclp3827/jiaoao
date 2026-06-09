@@ -41,6 +41,10 @@ struct TunerDiagnosticsReporter {
         recorder.appendEvent(formatter.eventText(for: reason), in: &diagnostics)
     }
 
+    func recordAudioLifecycleEvent(_ event: TunerAudioLifecycleEvent, in diagnostics: inout TunerDiagnostics) {
+        recorder.appendEvent(event.text, in: &diagnostics)
+    }
+
     func recordRawDetection(_ detection: PitchDetectionResult, in diagnostics: inout TunerDiagnostics) {
         recorder.recordRawDetection(detection, in: &diagnostics)
         recorder.appendEvent(
@@ -173,5 +177,34 @@ struct TunerDiagnosticsReporter {
             acceptedDetectionCount: context.acceptedDetectionCount,
             in: &diagnostics
         )
+    }
+}
+
+enum TunerAudioLifecycleEvent {
+    case startRequested
+    case permissionGranted
+    case permissionDenied
+    case startSucceeded
+    case startFailed
+    case startTimedOut
+    case stopRequested
+
+    var text: String {
+        switch self {
+        case .startRequested:
+            return "音频: 请求启动"
+        case .permissionGranted:
+            return "音频: 麦克风权限已允许"
+        case .permissionDenied:
+            return "音频: 麦克风权限受限"
+        case .startSucceeded:
+            return "音频: 启动成功"
+        case .startFailed:
+            return "音频: 启动失败"
+        case .startTimedOut:
+            return "音频: 启动超时"
+        case .stopRequested:
+            return "音频: 停止监听"
+        }
     }
 }

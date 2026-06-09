@@ -119,4 +119,21 @@ extension PipaTunerTests {
 
         XCTAssertEqual(viewModel.diagnostics.recentEvents.count, TunerConfiguration.Diagnostics.eventLimit)
     }
+
+    func testDiagnosticsRecordsAudioLifecycleEvents() {
+        let reporter = TunerDiagnosticsReporter()
+        var diagnostics = TunerDiagnostics()
+
+        reporter.recordAudioLifecycleEvent(.startRequested, in: &diagnostics)
+        reporter.recordAudioLifecycleEvent(.permissionGranted, in: &diagnostics)
+        reporter.recordAudioLifecycleEvent(.startSucceeded, in: &diagnostics)
+        reporter.recordAudioLifecycleEvent(.stopRequested, in: &diagnostics)
+
+        XCTAssertEqual(diagnostics.recentEvents, [
+            "音频: 请求启动",
+            "音频: 麦克风权限已允许",
+            "音频: 启动成功",
+            "音频: 停止监听"
+        ])
+    }
 }
