@@ -155,7 +155,7 @@ private struct BottomStringTabs: View {
     var body: some View {
         NativeStringSegmentedControl(
             selection: selectionBinding,
-            strings: PipaString.tuningOrder,
+            strings: [.fourth, .third, .second, .first],
             isEnabled: isEnabled
         )
         .frame(height: 51)

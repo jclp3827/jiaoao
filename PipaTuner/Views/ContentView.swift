@@ -8,7 +8,7 @@ struct ContentView: View {
             TunerTheme.background
                 .ignoresSafeArea()
 
-            PipaBackdrop()
+            PipaBackdrop(activeString: viewModel.activeString)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {

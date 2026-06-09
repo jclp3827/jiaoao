@@ -14,22 +14,10 @@ struct TunerHeader: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .lastTextBaseline, spacing: 8) {
-                        Text("琵琶调音")
-                            .font(.system(size: fontSize, weight: .black, design: .serif))
-                            .foregroundStyle(TunerTheme.text)
-                            .shadow(color: TunerTheme.copper.opacity(0.30), radius: 7, x: 0, y: 3)
-
-                        Text("听准")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(TunerTheme.copper)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 3)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                    .stroke(TunerTheme.copper, lineWidth: 1)
-                            )
-                    }
+                    Text("琵琶调音")
+                        .font(.system(size: fontSize, weight: .black, design: .serif))
+                        .foregroundStyle(TunerTheme.text)
+                        .shadow(color: TunerTheme.copper.opacity(0.30), radius: 7, x: 0, y: 3)
                 }
 
                 Spacer(minLength: 0)
