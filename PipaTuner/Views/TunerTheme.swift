@@ -1,14 +1,14 @@
 import SwiftUI
 
 enum TunerTheme {
-    static let ink = Color(red: 0.12, green: 0.10, blue: 0.09)
-    static let panel = Color(red: 0.17, green: 0.15, blue: 0.13)
-    static let panelRaised = Color(red: 0.23, green: 0.20, blue: 0.17)
+    static let ink = Color(red: 0.08, green: 0.10, blue: 0.10)
+    static let panel = Color(red: 0.14, green: 0.14, blue: 0.13)
+    static let panelRaised = Color(red: 0.20, green: 0.18, blue: 0.16)
     static let gold = Color(red: 1.00, green: 0.78, blue: 0.50)
     static let copper = Color(red: 0.84, green: 0.45, blue: 0.20)
     static let acidGreen = Color(red: 0.72, green: 0.95, blue: 0.22)
-    static let text = Color(red: 0.98, green: 0.88, blue: 0.72)
-    static let muted = Color(red: 0.72, green: 0.65, blue: 0.57)
+    static let text = Color(red: 0.96, green: 0.90, blue: 0.78)
+    static let muted = Color(red: 0.70, green: 0.68, blue: 0.61)
     static let border = Color.white.opacity(0.12)
     static let actionInk = Color(red: 0.12, green: 0.07, blue: 0.03)
 
@@ -16,9 +16,9 @@ enum TunerTheme {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.08, green: 0.08, blue: 0.08),
-                    Color(red: 0.18, green: 0.15, blue: 0.13),
-                    Color(red: 0.09, green: 0.08, blue: 0.08)
+                    Color(red: 0.05, green: 0.07, blue: 0.07),
+                    Color(red: 0.14, green: 0.13, blue: 0.11),
+                    Color(red: 0.07, green: 0.08, blue: 0.08)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -31,11 +31,11 @@ enum TunerTheme {
                 .blur(radius: 8)
                 .scaleEffect(1.18)
 
-            Color.black.opacity(0.54)
+            Color.black.opacity(0.58)
 
             RadialGradient(
                 colors: [
-                    copper.opacity(0.34),
+                    copper.opacity(0.24),
                     .clear
                 ],
                 center: .topTrailing,
@@ -45,7 +45,7 @@ enum TunerTheme {
 
             RadialGradient(
                 colors: [
-                    gold.opacity(0.16),
+                    acidGreen.opacity(0.10),
                     .clear
                 ],
                 center: .bottom,
@@ -76,7 +76,7 @@ enum TunerTheme {
         LinearGradient(
             colors: [
                 panelRaised.opacity(0.92),
-                panel.opacity(0.94)
+                panel.opacity(0.96)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing

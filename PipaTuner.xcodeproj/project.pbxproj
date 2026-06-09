@@ -36,6 +36,8 @@
 		000000000000000000000042 /* TunerDiagnosticsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000043 /* TunerDiagnosticsViews.swift */; };
 		000000000000000000000044 /* CompactPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000045 /* CompactPanels.swift */; };
 		000000000000000000000046 /* CompactDeviationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000047 /* CompactDeviationPanel.swift */; };
+		000000000000000000000070 /* PipaBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000072 /* PipaBackdrop.swift */; };
+		000000000000000000000071 /* NativeStringSegmentedControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000073 /* NativeStringSegmentedControl.swift */; };
 		000000000000000000000020 /* PipaTunerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000021 /* PipaTunerTests.swift */; };
 		000000000000000000000060 /* PipaTunerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000061 /* PipaTunerModelTests.swift */; };
 		000000000000000000000062 /* TunerViewModelManualTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000063 /* TunerViewModelManualTests.swift */; };
@@ -85,6 +87,8 @@
 		000000000000000000000043 /* TunerDiagnosticsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerDiagnosticsViews.swift; sourceTree = "<group>"; };
 		000000000000000000000045 /* CompactPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactPanels.swift; sourceTree = "<group>"; };
 		000000000000000000000047 /* CompactDeviationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactDeviationPanel.swift; sourceTree = "<group>"; };
+		000000000000000000000072 /* PipaBackdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipaBackdrop.swift; sourceTree = "<group>"; };
+		000000000000000000000073 /* NativeStringSegmentedControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeStringSegmentedControl.swift; sourceTree = "<group>"; };
 		00000000000000000000000E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		00000000000000000000000F /* PipaTuner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = PipaTuner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000000000021 /* PipaTunerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipaTunerTests.swift; sourceTree = "<group>"; };
@@ -212,6 +216,8 @@
 				000000000000000000000037 /* TunerCards.swift */,
 				000000000000000000000039 /* TunerStage.swift */,
 				000000000000000000000041 /* TunerActionComponents.swift */,
+				000000000000000000000072 /* PipaBackdrop.swift */,
+				000000000000000000000073 /* NativeStringSegmentedControl.swift */,
 				000000000000000000000043 /* TunerDiagnosticsViews.swift */,
 			);
 			path = Components;
@@ -359,6 +365,8 @@
 				000000000000000000000036 /* TunerCards.swift in Sources */,
 				000000000000000000000038 /* TunerStage.swift in Sources */,
 				000000000000000000000040 /* TunerActionComponents.swift in Sources */,
+				000000000000000000000070 /* PipaBackdrop.swift in Sources */,
+				000000000000000000000071 /* NativeStringSegmentedControl.swift in Sources */,
 				000000000000000000000042 /* TunerDiagnosticsViews.swift in Sources */,
 				00000000000000000000003A /* CompactDashboard.swift in Sources */,
 				000000000000000000000044 /* CompactPanels.swift in Sources */,

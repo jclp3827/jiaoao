@@ -8,12 +8,10 @@ struct ContentView: View {
             TunerTheme.background
                 .ignoresSafeArea()
 
+            PipaBackdrop()
+
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    TunerHeader(
-                        tuningMode: viewModel.tuningMode,
-                        toggleTuningMode: viewModel.toggleTuningMode
-                    )
+                VStack(alignment: .leading, spacing: 10) {
                     TunerDashboard(
                         viewModel: viewModel,
                         tuningMode: $viewModel.tuningMode,
@@ -24,9 +22,9 @@ struct ContentView: View {
                         DiagnosticsCard(diagnostics: viewModel.diagnostics)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 108)
+                .padding(.horizontal, 15)
+                .padding(.top, 6)
+                .padding(.bottom, 156)
             }
             .scrollIndicators(.hidden)
 
@@ -40,19 +38,43 @@ struct ContentView: View {
                             action: viewModel.toggleDiagnostics
                         )
                     }
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 94)
+                    .padding(.trailing, 15)
+                    .padding(.bottom, 142)
                 }
             }
         }
+        .safeAreaInset(edge: .top) {
+            TunerHeader(
+                tuningMode: viewModel.tuningMode
+            )
+            .padding(.horizontal, 15)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+            .background(
+                LinearGradient(
+                    colors: [
+                        TunerTheme.ink,
+                        TunerTheme.ink.opacity(0.92),
+                        Color.black.opacity(0)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            )
+        }
         .safeAreaInset(edge: .bottom) {
             TunerActionBar(
+                tuningMode: viewModel.tuningMode,
+                selectedString: $viewModel.selectedString,
+                displayString: viewModel.tuningMode == .manual ? viewModel.selectedString : viewModel.activeString,
                 isListening: viewModel.isListening,
                 isStarting: viewModel.isStartingAudio,
                 resultStatusText: primaryStatusText,
                 microphoneStatusText: viewModel.microphoneStatusText,
                 activityLevel: viewModel.inputActivityLevel,
                 tint: statusColor,
+                toggleTuningMode: viewModel.toggleTuningMode,
                 action: viewModel.toggleListening
             )
         }
@@ -88,17 +110,16 @@ struct TunerDashboard: View {
     }
 
     private var wideLayout: some View {
-        HStack(alignment: .center, spacing: 18) {
-            VStack(spacing: 18) {
-                StringPickerCard(selectedString: $selectedString, isEnabled: tuningMode == .manual)
+        HStack(alignment: .center, spacing: 16) {
+            VStack(spacing: 16) {
                 DeviationMeterCard(centsOffset: viewModel.centsOffset, centsText: viewModel.centsText, statusColor: statusColor)
             }
-            .frame(width: 250)
+            .frame(width: 224)
 
             PipaHeroStage(string: viewModel.activeString, statusColor: statusColor)
-                .frame(maxWidth: .infinity, minHeight: 650)
+                .frame(maxWidth: .infinity, minHeight: 628)
 
-            VStack(spacing: 18) {
+            VStack(spacing: 16) {
                 ReadoutCard(viewModel: viewModel, statusColor: statusColor)
                 ConfidenceCard(
                     confidenceText: viewModel.confidenceText,
@@ -107,12 +128,12 @@ struct TunerDashboard: View {
                 )
                 AudioStatusCard(level: viewModel.inputActivityLevel, statusText: viewModel.recognitionStatusText, tint: statusColor)
             }
-            .frame(width: 270)
+            .frame(width: 264)
         }
     }
 
     private var compactLayout: some View {
-        HTMLStyleCompactDashboard(
+        CompactDashboard(
             viewModel: viewModel,
             tuningMode: $tuningMode,
             selectedString: $selectedString,

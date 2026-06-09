@@ -2,18 +2,24 @@ import SwiftUI
 
 struct StringPickerCard: View {
     @Binding var selectedString: PipaString
+    let displayString: PipaString
     let isEnabled: Bool
 
     var body: some View {
         TunerCard {
-            VStack(alignment: .leading, spacing: 14) {
-                SectionTitle(title: "选择弦", subtitle: isEnabled ? "手动选择当前拨动的琴弦" : "自动模式下由系统判定当前弦")
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(
+                    title: "选择弦",
+                    subtitle: isEnabled ? "手动选择当前拨动的琴弦" : "自动模式下由系统判定当前弦",
+                    alignment: .center
+                )
+                .frame(maxWidth: .infinity)
 
-                VStack(spacing: 10) {
+                VStack(spacing: 8) {
                     ForEach(PipaString.tuningOrder) { string in
                         StringOptionButton(
                             string: string,
-                            isSelected: selectedString == string,
+                            isSelected: displayString == string,
                             isEnabled: isEnabled
                         ) {
                             selectedString = string
@@ -33,13 +39,13 @@ struct StringOptionButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 9) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(string.shortName)
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .bold, design: .serif))
                         .foregroundStyle(isSelected ? TunerTheme.text : TunerTheme.muted)
                     Text(string.jianpuLabel)
-                        .font(.caption)
+                        .font(.system(size: 12, weight: .regular))
                         .foregroundStyle(isSelected ? TunerTheme.gold : TunerTheme.muted.opacity(0.78))
                 }
 
@@ -48,17 +54,18 @@ struct StringOptionButton: View {
                 ZStack {
                     Circle()
                         .stroke(isSelected ? TunerTheme.gold : TunerTheme.border, lineWidth: 1.5)
-                        .frame(width: 24, height: 24)
+                        .frame(width: 22, height: 22)
 
                     if isSelected {
                         Circle()
                             .fill(TunerTheme.gold)
-                            .frame(width: 9, height: 9)
+                            .frame(width: 8, height: 8)
                     }
                 }
             }
-            .padding(14)
-            .tunerOptionChrome(isSelected: isSelected, cornerRadius: 18)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .tunerOptionChrome(isSelected: isSelected, cornerRadius: 14)
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -72,7 +79,7 @@ struct ReadoutCard: View {
 
     var body: some View {
         TunerCard {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 10) {
                     Text("实时结果")
                         .font(.system(size: 22, weight: .bold, design: .serif))
@@ -81,35 +88,35 @@ struct ReadoutCard: View {
                     Spacer(minLength: 0)
 
                     if viewModel.tuningMode == .auto {
-                        AutoDetectionPill(title: "自动", value: viewModel.autoStatusText)
+                        AutoDetectionPill(title: "", value: viewModel.autoStatusText)
                     }
                 }
 
                 VStack(spacing: 10) {
                     Text(viewModel.detectedFrequencyText)
-                        .font(.system(size: 44, weight: .black, design: .rounded))
+                        .font(.system(size: 42, weight: .black, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(primaryReadoutColor)
                         .tunerSingleLine()
                         .frame(maxWidth: .infinity)
-                        .frame(height: 52)
+                        .frame(height: 50)
 
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 7) {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text("目标")
                                 .font(.caption2.weight(.bold))
                                 .tunerTextTone(.muted)
                                 .frame(minWidth: 32, alignment: .leading)
                             Text(viewModel.activeString.frequencyLabel)
-                                .tunerMetricText(size: 18, weight: .bold)
+                                .tunerMetricText(size: 17, weight: .bold)
                                 .monospacedDigit()
                                 .tunerSingleLine()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(viewModel.activeString.displayPitchName)
-                                .tunerMetricText(size: 34, weight: .black, design: .serif, tone: .gold)
+                            Text(readoutPitchName)
+                                .tunerMetricText(size: 32, weight: .black, design: .serif, tone: .gold)
                                 .frame(minWidth: 32, alignment: .leading)
                             Text(viewModel.activeString.jianpuLabel)
                                 .font(.caption2)
@@ -118,12 +125,12 @@ struct ReadoutCard: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 11)
-                    .frame(minHeight: 78)
-                    .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .frame(minHeight: 74)
+                    .background(Color.black.opacity(0.24), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(referenceBorderColor, lineWidth: 1)
                     )
                 }
@@ -141,6 +148,10 @@ struct ReadoutCard: View {
 
     private var referenceBorderColor: Color {
         hasDetectedFrequency ? statusColor.opacity(0.30) : TunerTheme.border.opacity(0.80)
+    }
+
+    private var readoutPitchName: String {
+        viewModel.activeString == .fourth ? "A" : viewModel.activeString.displayPitchName
     }
 }
 
@@ -172,12 +183,12 @@ struct ConfidenceCard: View {
 
     var body: some View {
         TunerCard {
-            VStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .center, spacing: 10) {
                 SectionTitle(title: "稳定度", subtitle: "本次识别质量")
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text(confidenceText)
-                    .font(.system(size: 38, weight: .black, design: .rounded))
+                    .font(.system(size: 36, weight: .black, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(tint)
 
@@ -211,12 +222,13 @@ struct DeviationMeterCard: View {
     var body: some View {
         TunerCard {
             VStack(alignment: .leading, spacing: 16) {
-                SectionTitle(title: "偏差刻度", subtitle: "越靠近正中，音准越接近目标")
+                SectionTitle(title: "偏差", subtitle: "越靠近中，音准越接近目标", alignment: .center)
+                    .frame(maxWidth: .infinity)
 
                 GeometryReader { proxy in
                     let height = proxy.size.height
-                    let centerX = proxy.size.width * 0.38
-                    let trackHeight = height * 0.84
+                    let centerX = proxy.size.width * 0.42
+                    let trackHeight = height * 0.88
                     let trackTop = (height - trackHeight) / 2
                     let trackBottom = trackTop + trackHeight
                     let normalized = meterPosition(from: centsOffset)
@@ -225,42 +237,42 @@ struct DeviationMeterCard: View {
 
                     ZStack {
                         Capsule()
-                            .fill(Color.black.opacity(0.28))
-                            .frame(width: 12, height: trackHeight)
+                            .fill(Color.black.opacity(0.30))
+                            .frame(width: 10, height: trackHeight)
                             .position(x: centerX, y: height / 2)
 
-                        ForEach(1..<10, id: \.self) { index in
+                        ForEach(0...10, id: \.self) { index in
                             let y = trackTop + trackHeight * CGFloat(index) / 10.0
                             Rectangle()
                                 .fill(index == 5 ? TunerTheme.gold.opacity(0.9) : TunerTheme.muted.opacity(0.34))
-                                .frame(width: index == 5 ? 64 : 38, height: index == 5 ? 2.5 : 1)
+                                .frame(width: index == 5 ? 58 : 34, height: index == 5 ? 2.2 : 1)
+                                .position(x: centerX, y: y)
+                        }
+
+                        ForEach(0..<10, id: \.self) { index in
+                            let y = trackTop + trackHeight * (CGFloat(index) + 0.5) / 10.0
+                            Rectangle()
+                                .fill(TunerTheme.muted.opacity(0.24))
+                                .frame(width: 17, height: 1)
                                 .position(x: centerX, y: y)
                         }
 
                         Capsule()
                             .fill(statusColor)
-                            .frame(width: 18, height: 24)
-                            .shadow(color: statusColor.opacity(0.75), radius: 10, x: 0, y: 0)
+                            .frame(width: 17, height: 22)
+                            .shadow(color: statusColor.opacity(0.68), radius: 8, x: 0, y: 0)
                             .position(x: centerX, y: indicatorY)
                             .animation(.easeOut(duration: 0.45), value: centsOffset ?? 0)
 
-                        VStack(alignment: .leading, spacing: 20) {
-                            MeterLabel(text: "偏高")
-                            Spacer()
-                            HStack(spacing: 10) {
-                                Rectangle()
-                                    .fill(TunerTheme.gold)
-                                    .frame(width: 34, height: 2)
-                                Text("正中")
-                                    .foregroundStyle(TunerTheme.gold)
-                            }
-                            Spacer()
-                            MeterLabel(text: "偏低")
+                        Group {
+                            MeterLabel(text: "高")
+                                .position(x: proxy.size.width * 0.72, y: trackTop)
+                            MeterLabel(text: "中", tint: TunerTheme.gold)
+                                .position(x: proxy.size.width * 0.72, y: trackTop + trackHeight * 0.50)
+                            MeterLabel(text: "低")
+                                .position(x: proxy.size.width * 0.72, y: trackBottom)
                         }
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, proxy.size.width * 0.58)
-                        .padding(.vertical, 18)
+                        .font(.system(size: 13, weight: .semibold))
 
                         VStack(spacing: 4) {
                             Text(centsOffset == nil ? "--" : centsText)
@@ -272,7 +284,7 @@ struct DeviationMeterCard: View {
                         .position(x: centerX, y: 22)
                     }
                 }
-                .frame(height: 260)
+                .frame(height: 386)
             }
         }
     }
@@ -290,15 +302,11 @@ struct DeviationMeterCard: View {
 
 struct MeterLabel: View {
     let text: String
+    var tint: Color = TunerTheme.muted
 
     var body: some View {
-        HStack(spacing: 10) {
-            Rectangle()
-                .fill(TunerTheme.muted.opacity(0.5))
-                .frame(width: 28, height: 1)
-            Text(text)
-                .foregroundStyle(TunerTheme.muted)
-        }
+        Text(text)
+            .foregroundStyle(tint)
     }
 }
 
@@ -309,11 +317,11 @@ struct AudioStatusCard: View {
 
     var body: some View {
         TunerCard {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 14) {
                 SectionTitle(title: "当前状态", subtitle: statusText)
 
                 AudioActivityWaveform(level: level, tint: tint)
-                    .frame(height: 56)
+                    .frame(height: 52)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 8)
                     .tunerSurface(.inset, cornerRadius: 18)

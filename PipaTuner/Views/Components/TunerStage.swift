@@ -2,24 +2,23 @@ import SwiftUI
 
 struct TunerHeader: View {
     let tuningMode: TuningMode
-    let toggleTuningMode: () -> Void
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
-            header(fontSize: 42, gearSize: 28)
-            header(fontSize: 36, gearSize: 25)
+            header(fontSize: 39)
+            header(fontSize: 34)
         }
     }
 
-    private func header(fontSize: CGFloat, gearSize: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .top, spacing: 12) {
+    private func header(fontSize: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .lastTextBaseline, spacing: 8) {
                         Text("琵琶调音")
                             .font(.system(size: fontSize, weight: .black, design: .serif))
                             .foregroundStyle(TunerTheme.text)
-                            .shadow(color: TunerTheme.copper.opacity(0.38), radius: 8, x: 0, y: 3)
+                            .shadow(color: TunerTheme.copper.opacity(0.30), radius: 7, x: 0, y: 3)
 
                         Text("听准")
                             .font(.caption2.weight(.bold))
@@ -34,19 +33,6 @@ struct TunerHeader: View {
                 }
 
                 Spacer(minLength: 0)
-
-                Button(action: toggleTuningMode) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(tuningMode == .manual ? "手动" : "自动")
-                            .font(.system(size: gearSize - 8, weight: .bold, design: .rounded))
-                        Text("切换")
-                            .font(.caption2.weight(.semibold))
-                    }
-                    .foregroundStyle(TunerTheme.gold)
-                    .padding(.top, 4)
-                    .accessibilityLabel("切换调音模式")
-                }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -72,9 +58,9 @@ struct PipaHeroStage: View {
             Image("pipaHero")
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: 360, maxHeight: 620)
-                .shadow(color: .black.opacity(0.52), radius: 28, x: 0, y: 22)
-                .shadow(color: statusColor.opacity(0.16), radius: 18, x: 0, y: 0)
+                .frame(maxWidth: 372, maxHeight: 624)
+                .shadow(color: .black.opacity(0.50), radius: 24, x: 0, y: 18)
+                .shadow(color: statusColor.opacity(0.14), radius: 16, x: 0, y: 0)
                 .accessibilityLabel("琵琶")
 
             LinearGradient(
@@ -89,7 +75,7 @@ struct PipaHeroStage: View {
             VStack(spacing: 14) {
                 Spacer()
                 CurrentSelectionPill(string: string)
-                    .frame(maxWidth: 360)
+                    .frame(maxWidth: 340)
             }
             .padding(.horizontal, 8)
             .padding(.bottom, 2)
@@ -107,8 +93,8 @@ struct CompactHeroStage: View {
         GeometryReader { proxy in
             let width = proxy.size.width
             let height = proxy.size.height
-            let sideCardWidth = min(126, width * 0.35)
-            let imageWidth = min(width * 0.70, 260)
+            let sideCardWidth = min(118, width * 0.33)
+            let imageWidth = min(width * 0.68, 252)
 
             ZStack {
                 RadialGradient(
@@ -128,8 +114,8 @@ struct CompactHeroStage: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: imageWidth, height: height * 0.92)
-                    .shadow(color: .black.opacity(0.58), radius: 24, x: 0, y: 18)
-                    .shadow(color: statusColor.opacity(0.16), radius: 18, x: 0, y: 0)
+                    .shadow(color: .black.opacity(0.56), radius: 21, x: 0, y: 16)
+                    .shadow(color: statusColor.opacity(0.14), radius: 16, x: 0, y: 0)
                     .position(x: width / 2, y: height * 0.44)
                     .accessibilityLabel("琵琶")
 
@@ -207,9 +193,9 @@ struct CompactMetricBadge: View {
                 .minimumScaleFactor(0.72)
         }
         .frame(maxWidth: .infinity, alignment: frameAlignment)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
-        .tunerSurface(.card, cornerRadius: 18)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 9)
+                .tunerSurface(.card, cornerRadius: 14)
     }
 
     private var frameAlignment: Alignment {

@@ -34,7 +34,7 @@ private struct TunerSurfaceModifier: ViewModifier {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .stroke(TunerTheme.border, lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.32), radius: 18, x: 0, y: 12)
+                .shadow(color: .black.opacity(0.28), radius: 14, x: 0, y: 9)
         case .glass:
             content
                 .background(
@@ -44,9 +44,9 @@ private struct TunerSurfaceModifier: ViewModifier {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(TunerTheme.gold.opacity(0.18), lineWidth: 1)
+                        .stroke(TunerTheme.gold.opacity(0.15), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.38), radius: 16, x: 0, y: 10)
+                .shadow(color: .black.opacity(0.32), radius: 13, x: 0, y: 8)
         case .badge:
             content
                 .background(Color.black.opacity(0.24), in: Capsule())
@@ -132,7 +132,7 @@ private struct TunerOptionChromeModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(strokeColor, lineWidth: strokeLineWidth)
             )
-            .shadow(color: isSelected ? TunerTheme.copper.opacity(0.34) : .clear, radius: 10, x: 0, y: 6)
+            .shadow(color: isSelected ? TunerTheme.copper.opacity(0.26) : .clear, radius: 8, x: 0, y: 5)
     }
 
     private var backgroundFill: AnyShapeStyle {
@@ -172,26 +172,32 @@ struct TunerCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(18)
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .tunerSurface(.card, cornerRadius: 24)
+            .tunerSurface(.card, cornerRadius: 18)
     }
 }
 
 struct SectionTitle: View {
     let title: String
     let subtitle: String
+    var alignment: HorizontalAlignment = .leading
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: alignment, spacing: 4) {
             Text(title)
-                .font(.system(size: 22, weight: .bold, design: .serif))
+                .font(.system(size: 20, weight: .bold, design: .serif))
                 .foregroundStyle(TunerTheme.text)
             Text(subtitle)
-                .font(.footnote)
+                .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(TunerTheme.muted)
+                .multilineTextAlignment(textAlignment)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var textAlignment: TextAlignment {
+        alignment == .center ? .center : .leading
     }
 }
 
@@ -254,8 +260,8 @@ struct CurrentSelectionPill: View {
                 .foregroundStyle(TunerTheme.muted)
         }
         .font(.subheadline)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
         .tunerSurface(.badge, cornerRadius: 999)
         .frame(maxWidth: .infinity)
     }
@@ -267,16 +273,25 @@ struct AutoDetectionPill: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(title)
-                .foregroundStyle(TunerTheme.muted)
-            Text(value)
+            if !title.isEmpty {
+                Text(title)
+                    .foregroundStyle(TunerTheme.muted)
+            }
+            Text(displayValue)
                 .fontWeight(.bold)
                 .foregroundStyle(TunerTheme.gold)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .font(.subheadline)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .tunerSurface(.badge, cornerRadius: 999)
+    }
+
+    private var displayValue: String {
+        value == "等待判弦" ? "等待\n判弦" : value
     }
 }
 
@@ -290,7 +305,7 @@ struct FloatingIconButton: View {
             Image(systemName: systemName)
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(tint)
-                .frame(width: 54, height: 54)
+                .frame(width: 50, height: 50)
                 .background(
                     Circle()
                         .fill(TunerTheme.panelRaised.opacity(0.92))
@@ -299,7 +314,7 @@ struct FloatingIconButton: View {
                     Circle()
                         .stroke(TunerTheme.border, lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.35), radius: 16, x: 0, y: 10)
+                .shadow(color: .black.opacity(0.32), radius: 13, x: 0, y: 8)
         }
         .buttonStyle(.plain)
     }
