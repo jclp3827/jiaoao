@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 final class TunerAudioController {
@@ -12,36 +13,47 @@ final class TunerAudioController {
         }
     }
 
+    var recordPermission: TunerMicrophonePermission {
+        switch AVAudioSession.sharedInstance().recordPermission {
+        case .granted:
+            return .granted
+        case .denied:
+            return .denied
+        case .undetermined:
+            return .undetermined
+        @unknown default:
+            return .denied
+        }
+    }
+
+    func requestRecordPermission(_ completion: @escaping (Bool) -> Void) {
+        recorder.requestRecordPermission { granted in
+            DispatchQueue.main.async {
+                completion(granted)
+            }
+        }
+    }
+
     func start(
         targetFrequency: Double?,
-        onPermissionGranted: @escaping () -> Void,
         completion: @escaping (TunerAudioStartResult) -> Void
     ) {
-        recorder.requestRecordPermission { [weak self] granted in
-            guard let self else { return }
+        guard recordPermission == .granted else {
+            completion(.permissionDenied)
+            return
+        }
 
-            guard granted else {
+        recorder.targetFrequency = targetFrequency
+        startQueue.async { [recorder] in
+            do {
+                try recorder.start()
                 DispatchQueue.main.async {
-                    completion(.permissionDenied)
+                    completion(.started)
                 }
-                return
-            }
-
-            DispatchQueue.main.async {
-                onPermissionGranted()
-            }
-            recorder.targetFrequency = targetFrequency
-            startQueue.async { [recorder] in
-                do {
-                    try recorder.start()
-                    DispatchQueue.main.async {
-                        completion(.started)
-                    }
-                } catch {
-                    recorder.stop()
-                    DispatchQueue.main.async {
-                        completion(.failed)
-                    }
+            } catch {
+                recorder.stop()
+                DispatchQueue.main.async {
+                    completion(.failed)
                 }
             }
         }
@@ -62,4 +74,10 @@ enum TunerAudioStartResult: Equatable {
     case started
     case permissionDenied
     case failed
+}
+
+enum TunerMicrophonePermission: Equatable {
+    case undetermined
+    case granted
+    case denied
 }

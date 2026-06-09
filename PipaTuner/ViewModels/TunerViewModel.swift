@@ -71,21 +71,45 @@ final class TunerViewModel: ObservableObject {
         audioStartRequestID = requestID
         microphoneStatusText = statusPresenter.requestingPermissionText
         recognitionStatusText = statusPresenter.startingRecognitionText
-        directionText = statusPresenter.startingMicrophoneText
+        directionText = statusPresenter.requestingPermissionText
         statusColorName = "secondary"
         diagnosticsReporter.recordAudioLifecycleEvent(.startRequested, in: &diagnostics)
         refreshDiagnostics()
-        scheduleAudioStartTimeout(for: requestID)
 
-        audioController.start(
-            targetFrequency: recorderTargetFrequency,
-            onPermissionGranted: { [weak self] in
+        switch audioController.recordPermission {
+        case .granted:
+            recordPermissionGranted()
+            beginAuthorizedAudioStart(requestID: requestID)
+
+        case .denied:
+            handleAudioStartResult(.permissionDenied, requestID: requestID)
+
+        case .undetermined:
+            audioController.requestRecordPermission { [weak self] granted in
                 guard let self else { return }
                 guard audioStartRequestID == requestID, isStartingAudio else { return }
-                microphoneStatusText = statusPresenter.startingMicrophoneText
-                diagnosticsReporter.recordAudioLifecycleEvent(.permissionGranted, in: &diagnostics)
-                refreshDiagnostics()
-            },
+
+                if granted {
+                    recordPermissionGranted()
+                    beginAuthorizedAudioStart(requestID: requestID)
+                } else {
+                    handleAudioStartResult(.permissionDenied, requestID: requestID)
+                }
+            }
+        }
+    }
+
+    private func recordPermissionGranted() {
+        microphoneStatusText = statusPresenter.startingMicrophoneText
+        directionText = statusPresenter.startingMicrophoneText
+        diagnosticsReporter.recordAudioLifecycleEvent(.permissionGranted, in: &diagnostics)
+        refreshDiagnostics()
+    }
+
+    private func beginAuthorizedAudioStart(requestID: UUID) {
+        scheduleAudioStartTimeout(for: requestID)
+        audioController.start(
+            targetFrequency: recorderTargetFrequency,
             completion: { [weak self] result in
                 self?.handleAudioStartResult(result, requestID: requestID)
             }
